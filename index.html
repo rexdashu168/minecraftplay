@@ -3,541 +3,549 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小蛹的 Minecraft 冒險世界</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>小蛹的 Minecraft 生存冒險</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            min-height: 100vh;
-            background: linear-gradient(180deg, #87CEEB 0%, #87CEEB 50%, #5D8C3E 50%, #5D8C3E 55%, #8B5A2B 55%, #8B5A2B 70%, #555 70%);
-            background-attachment: fixed;
-        }
-        .clouds { position: fixed; top: 0; left: 0; width: 100%; height: 150px; pointer-events: none; z-index: 1; overflow: hidden; }
-        .cloud { position: absolute; background: white; box-shadow: 20px 0 0 white, 40px 0 0 white, 10px -12px 0 white, 30px -12px 0 white; width: 18px; height: 18px; animation: cloudMove linear infinite; }
-        .cloud:nth-child(1) { top: 25px; animation-duration: 40s; }
-        .cloud:nth-child(2) { top: 60px; animation-duration: 50s; animation-delay: -20s; }
-        .cloud:nth-child(3) { top: 45px; animation-duration: 45s; animation-delay: -30s; }
-        @keyframes cloudMove { from { left: -80px; } to { left: 100%; } }
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body { font-family: 'Courier New', monospace; background: #1a1a2e; min-height: 100vh; overflow: hidden; }
+        .game-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; }
 
 ```
-    .container { max-width: 800px; margin: 0 auto; padding: 15px; position: relative; z-index: 2; }
-
-    .header {
-        text-align: center; padding: 20px;
-        background: linear-gradient(180deg, #5D8C3E, #3D6B24);
-        border: 6px solid #2D4A1C;
-        box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
-        margin-bottom: 15px;
+    .top-bar {
+        background: rgba(0,0,0,0.85); padding: 8px 12px;
+        display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 3px solid #444; flex-wrap: wrap; gap: 5px;
     }
-    .header h1 { font-size: 1.5rem; font-weight: 900; color: white; text-shadow: 3px 3px 0 #2D4A1C; }
-    .header .mascot { font-size: 3.5rem; display: block; margin-bottom: 8px; animation: swing 1.5s ease-in-out infinite; }
-    @keyframes swing { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
-    .header .subtitle { color: #FCEE4B; font-size: 0.85rem; margin-top: 8px; font-weight: 700; }
+    .stats { display: flex; gap: 12px; align-items: center; }
+    .stat-row { display: flex; align-items: center; gap: 2px; }
+    .stat-icon { font-size: 1rem; }
+    .hearts, .foods { display: flex; gap: 1px; font-size: 0.85rem; }
+    .game-info { display: flex; gap: 12px; font-size: 0.75rem; color: #aaa; align-items: center; }
+    .day-badge { padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+    .day-badge.day { background: #f4d03f; color: #333; }
+    .day-badge.night { background: #2c3e50; color: #fff; }
 
-    .player-hud {
-        background: rgba(0,0,0,0.8); border: 4px solid #4A4A4A; padding: 15px; margin-bottom: 15px;
-        display: flex; align-items: center; gap: 15px; flex-wrap: wrap;
+    .game-world { flex: 1; position: relative; overflow: hidden; background: #87CEEB; }
+    .game-world.night { background: #1a1a2e; }
+    .world-map { position: absolute; transition: transform 0.12s ease; }
+
+    .tile {
+        position: absolute; width: 48px; height: 48px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.6rem; cursor: pointer; transition: transform 0.08s;
+        border: 1px solid rgba(0,0,0,0.1);
     }
-    .player-skin { width: 55px; height: 55px; background: linear-gradient(180deg, #8B5A2B 25%, #00AAFF 25%, #00AAFF 65%, #1E40AF 65%); border: 3px solid #1a1a1a; display: flex; align-items: flex-start; justify-content: center; font-size: 1.2rem; padding-top: 2px; }
-    .player-info { flex: 1; min-width: 130px; }
-    .player-name { font-size: 1rem; font-weight: 900; color: white; margin-bottom: 5px; }
-    .health-bar { display: flex; gap: 2px; margin-bottom: 5px; }
-    .heart { width: 18px; height: 16px; background: #FF0000; clip-path: polygon(50% 100%, 0% 35%, 15% 0%, 50% 20%, 85% 0%, 100% 35%); }
-    .heart.empty { background: #444; }
-    .exp-bar-container { background: #111; border: 2px solid #333; height: 14px; position: relative; }
-    .exp-bar { background: linear-gradient(180deg, #7CFC00, #228B22); height: 100%; transition: width 0.4s; }
-    .exp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #7CFC00; font-size: 0.65rem; font-weight: 900; }
-    .inventory { display: flex; gap: 5px; }
-    .inv-slot { width: 44px; height: 44px; background: #8B8B8B; border: 3px solid; border-color: #555 #CCC #CCC #555; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; position: relative; }
-    .inv-slot .count { position: absolute; bottom: 0; right: 2px; font-size: 0.6rem; font-weight: 900; color: white; text-shadow: 1px 1px #000; }
+    .tile:hover { transform: scale(1.08); z-index: 5; }
+    .tile:active { transform: scale(0.95); }
+    .tile.grass { background: linear-gradient(135deg, #4ade80, #22c55e); }
+    .tile.dirt { background: linear-gradient(135deg, #a16207, #854d0e); }
+    .tile.stone { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+    .tile.water { background: linear-gradient(135deg, #60a5fa, #3b82f6); cursor: not-allowed; }
+    .tile.sand { background: linear-gradient(135deg, #fde047, #eab308); }
+    .tile.coal-ore { background: linear-gradient(135deg, #4b5563, #374151); }
+    .tile.iron-ore { background: linear-gradient(135deg, #d4d4d8, #a1a1aa); }
+    .tile.gold-ore { background: linear-gradient(135deg, #fcd34d, #f59e0b); }
+    .tile.diamond-ore { background: linear-gradient(135deg, #67e8f9, #22d3ee); }
 
-    .section-title { font-size: 1.1rem; font-weight: 900; color: white; margin-bottom: 12px; text-shadow: 2px 2px 0 #000; }
-    .zones-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
-    .zone-card {
-        background: linear-gradient(180deg, #6D6D6D, #4D4D4D);
-        border: 5px solid; border-color: #8F8F8F #3F3F3F #3F3F3F #8F8F8F;
-        padding: 15px; text-align: center; cursor: pointer; transition: transform 0.1s; position: relative;
+    .player {
+        position: absolute; width: 48px; height: 48px; font-size: 1.8rem;
+        display: flex; align-items: center; justify-content: center;
+        z-index: 100; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.5));
     }
-    .zone-card:hover { transform: translateY(-4px); }
-    .zone-card:active { border-color: #3F3F3F #8F8F8F #8F8F8F #3F3F3F; }
-    .zone-card.locked { opacity: 0.5; cursor: not-allowed; }
-    .zone-card.locked:hover { transform: none; }
-    .zone-icon { font-size: 2.5rem; margin-bottom: 6px; display: block; }
-    .zone-name { font-size: 0.8rem; font-weight: 900; color: white; margin-bottom: 3px; }
-    .zone-desc { font-size: 0.65rem; color: #CCC; }
-    .zone-reward { margin-top: 6px; font-size: 0.65rem; color: #FCEE4B; font-weight: 700; }
-    .lock-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem; }
 
-    .game-screen { background: rgba(0,0,0,0.9); border: 5px solid #4A4A4A; padding: 20px; display: none; }
-    .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 3px solid #4A4A4A; flex-wrap: wrap; gap: 8px; }
-    .game-title { font-size: 1rem; font-weight: 900; color: white; }
-    .game-stats { display: flex; gap: 10px; align-items: center; }
-    .stat-badge { background: #333; border: 2px solid #555; padding: 6px 12px; font-size: 0.7rem; font-weight: 900; color: white; }
-    .game-lives { font-size: 1.2rem; letter-spacing: 3px; }
-
-    .mining-area { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; max-width: 350px; margin: 0 auto 15px; }
-    .mine-block {
-        aspect-ratio: 1; background: linear-gradient(145deg, #7F7F7F, #5F5F5F);
-        border: 4px solid; border-color: #9F9F9F #4F4F4F #4F4F4F #9F9F9F;
-        cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; transition: transform 0.1s;
+    .entity {
+        position: absolute; width: 48px; height: 48px; font-size: 1.5rem;
+        display: flex; align-items: center; justify-content: center;
+        z-index: 50; cursor: pointer; transition: left 0.25s, top 0.25s;
     }
-    .mine-block:hover { transform: scale(1.06); }
-    .mine-block.revealed { cursor: default; }
-    .mine-block.revealed:hover { transform: none; }
-    .mine-block.diamond-ore { background: linear-gradient(135deg, #4AEDD9, #2DD4BF); animation: shine 1.5s infinite; }
-    .mine-block.gold-ore { background: linear-gradient(135deg, #FCEE4B, #F59E0B); }
-    .mine-block.iron-ore { background: linear-gradient(135deg, #E8E8E8, #B8B8B8); }
-    .mine-block.coal-ore { background: linear-gradient(135deg, #4F4F4F, #2F2F2F); }
-    .mine-block.emerald-ore { background: linear-gradient(135deg, #10B981, #059669); animation: shine 1.5s infinite; }
-    .mine-block.creeper { background: linear-gradient(135deg, #5FCF5F, #3E9E3E); }
-    @keyframes shine { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3); } }
-
-    .battle-area { text-align: center; padding: 10px; }
-    .monster-display { font-size: 5rem; margin-bottom: 10px; animation: bounce 1s infinite; }
-    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-    .monster-name { font-size: 1rem; font-weight: 900; color: #FF6B6B; margin-bottom: 6px; }
-    .monster-hp-bar { background: #111; border: 3px solid #444; height: 20px; max-width: 260px; margin: 0 auto 15px; position: relative; }
-    .monster-hp { background: linear-gradient(180deg, #FF4444, #990000); height: 100%; transition: width 0.3s; }
-    .monster-hp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 0.65rem; font-weight: 900; }
-    .battle-question { background: #222; border: 3px solid #444; padding: 15px; margin-bottom: 15px; font-size: 1.2rem; font-weight: 900; color: white; }
-    .battle-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: 350px; margin: 0 auto; }
-    .battle-btn {
-        background: linear-gradient(180deg, #6D6D6D, #4D4D4D);
-        border: 4px solid; border-color: #8F8F8F #3F3F3F #3F3F3F #8F8F8F;
-        padding: 12px; font-family: inherit; font-size: 0.95rem; font-weight: 900; color: white; cursor: pointer;
+    .entity:hover { transform: scale(1.15); }
+    .entity-hp {
+        position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+        background: #333; width: 36px; height: 5px; border-radius: 2px; overflow: hidden;
     }
-    .battle-btn:hover { background: linear-gradient(180deg, #7D7D7D, #5D5D5D); }
-    .battle-btn.correct { background: linear-gradient(180deg, #5FCF5F, #2E7E2E); }
-    .battle-btn.wrong { background: linear-gradient(180deg, #FF5555, #992222); }
+    .entity-hp-fill { height: 100%; background: #ef4444; transition: width 0.2s; }
 
-    .build-area { text-align: center; }
-    .build-target { background: #222; border: 3px solid #444; padding: 15px; margin-bottom: 15px; }
-    .build-target-title { font-size: 0.8rem; color: #AAA; margin-bottom: 10px; }
-    .build-pattern { display: inline-grid; grid-template-columns: repeat(3, 45px); gap: 3px; }
-    .pattern-block { width: 45px; height: 45px; background: #555; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
-    .build-grid { display: inline-grid; grid-template-columns: repeat(3, 52px); gap: 4px; margin-bottom: 15px; }
-    .build-slot { width: 52px; height: 52px; background: #8B8B8B; border: 4px solid; border-color: #555 #CCC #CCC #555; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; }
-    .build-slot:hover { transform: scale(1.05); }
-    .build-materials { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
-    .material-btn { width: 52px; height: 52px; background: #8B8B8B; border: 4px solid; border-color: #555 #CCC #CCC #555; font-size: 1.5rem; cursor: pointer; }
-    .material-btn.selected { border-color: #FCEE4B; box-shadow: 0 0 10px #FCEE4B; }
+    .bottom-bar { background: rgba(0,0,0,0.9); padding: 8px; border-top: 3px solid #444; }
 
-    .mc-btn {
-        background: linear-gradient(180deg, #6D6D6D, #4D4D4D);
-        border: 5px solid; border-color: #8F8F8F #3F3F3F #3F3F3F #8F8F8F;
-        padding: 10px 20px; font-family: inherit; font-size: 0.85rem; font-weight: 900; color: white; cursor: pointer; margin: 4px;
+    .hotbar { display: flex; justify-content: center; gap: 3px; margin-bottom: 8px; }
+    .slot {
+        width: 44px; height: 44px; background: #555; border: 3px solid #333;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        font-size: 1.3rem; position: relative; cursor: pointer;
     }
-    .mc-btn:hover { background: linear-gradient(180deg, #7D7D7D, #5D5D5D); }
-    .mc-btn.primary { background: linear-gradient(180deg, #5FCF5F, #2E7E2E); border-color: #7FEF7F #2E7E2E #2E7E2E #7FEF7F; }
+    .slot.selected { border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.5); }
+    .slot .qty {
+        position: absolute; bottom: 1px; right: 3px;
+        font-size: 0.55rem; color: #fff; font-weight: bold; text-shadow: 1px 1px #000;
+    }
 
-    .result-screen { text-align: center; padding: 20px; }
-    .result-icon { font-size: 4.5rem; margin-bottom: 12px; }
-    .result-title { font-size: 1.4rem; font-weight: 900; margin-bottom: 10px; }
-    .result-title.win { color: #7CFC00; }
-    .result-title.lose { color: #FF6B6B; }
-    .result-message { font-size: 0.85rem; color: #CCC; margin-bottom: 15px; }
-    .loot-display { background: #222; border: 3px solid #444; padding: 15px; margin-bottom: 15px; }
-    .loot-title { font-size: 0.85rem; font-weight: 900; color: #FCEE4B; margin-bottom: 10px; }
-    .loot-items { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-    .loot-item { background: #8B8B8B; border: 3px solid; border-color: #555 #CCC #CCC #555; padding: 8px 12px; text-align: center; }
-    .loot-item-icon { font-size: 1.4rem; }
-    .loot-item-count { font-size: 0.65rem; font-weight: 900; color: white; margin-top: 3px; }
+    .controls { display: flex; justify-content: space-between; align-items: center; }
+    .dpad { display: grid; grid-template-columns: repeat(3, 42px); grid-template-rows: repeat(3, 42px); gap: 2px; }
+    .dpad-btn {
+        background: #444; border: 2px solid #666; border-radius: 4px;
+        font-size: 1.1rem; color: white; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .dpad-btn:hover { background: #555; }
+    .dpad-btn:active { background: #333; }
+    .dpad-btn.empty { background: transparent; border: none; }
 
-    .achievements-section { background: rgba(0,0,0,0.8); border: 4px solid #4A4A4A; padding: 15px; }
-    .achievements-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .achievement { background: #222; border: 3px solid #444; padding: 10px; text-align: center; opacity: 0.4; }
-    .achievement.unlocked { opacity: 1; border-color: #FCEE4B; }
-    .achievement-icon { font-size: 1.6rem; margin-bottom: 4px; }
-    .achievement-name { font-size: 0.55rem; font-weight: 700; color: white; }
+    .action-btns { display: flex; flex-direction: column; gap: 6px; }
+    .act-btn {
+        padding: 10px 16px; font-size: 0.8rem; font-weight: bold;
+        border: 3px solid; border-radius: 6px; cursor: pointer; font-family: inherit;
+    }
+    .act-btn.red { background: #dc2626; border-color: #991b1b; color: white; }
+    .act-btn.green { background: #16a34a; border-color: #15803d; color: white; }
+    .act-btn:active { transform: scale(0.95); }
 
-    .start-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-    .start-modal.hidden { display: none; }
-    .start-content { background: linear-gradient(180deg, #6D6D6D, #4D4D4D); border: 6px solid; border-color: #8F8F8F #3F3F3F #3F3F3F #8F8F8F; padding: 30px; text-align: center; max-width: 380px; width: 100%; }
-    .start-logo { font-size: 4rem; margin-bottom: 12px; animation: swing 1.5s infinite; }
-    .start-title { font-size: 1.2rem; font-weight: 900; color: white; margin-bottom: 6px; }
-    .start-subtitle { font-size: 0.75rem; color: #CCC; margin-bottom: 18px; }
-    .name-input { width: 100%; padding: 12px; background: #111; border: 4px solid #444; color: white; font-family: inherit; font-size: 0.95rem; font-weight: 700; text-align: center; margin-bottom: 15px; }
-    .name-input:focus { outline: none; border-color: #FCEE4B; }
+    .modal {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.92); display: none;
+        align-items: center; justify-content: center; z-index: 1000;
+    }
+    .modal.show { display: flex; }
+    .modal-box {
+        background: #2d2d2d; border: 4px solid #555; padding: 18px;
+        max-width: 320px; width: 90%; max-height: 75vh; overflow-y: auto;
+    }
+    .modal-title { font-size: 1.1rem; color: #fff; margin-bottom: 12px; text-align: center; }
+    .recipe {
+        background: #444; border: 2px solid #555; padding: 10px; margin-bottom: 6px;
+        display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+    }
+    .recipe:hover { background: #555; }
+    .recipe.disabled { opacity: 0.4; cursor: not-allowed; }
+    .recipe-info { display: flex; align-items: center; gap: 8px; }
+    .recipe-icon { font-size: 1.3rem; }
+    .recipe-name { color: #fff; font-size: 0.8rem; }
+    .recipe-cost { color: #aaa; font-size: 0.65rem; }
+    .recipe-btn { background: #16a34a; border: none; color: white; padding: 4px 10px; font-size: 0.7rem; cursor: pointer; }
+    .close-btn { background: #666; border: none; color: white; padding: 10px; width: 100%; margin-top: 10px; cursor: pointer; font-family: inherit; }
 
-    .sound-btn { position: fixed; top: 12px; right: 12px; width: 44px; height: 44px; background: #444; border: 3px solid; border-color: #666 #222 #222 #666; font-size: 1.3rem; cursor: pointer; z-index: 100; display: flex; align-items: center; justify-content: center; }
+    .toast {
+        position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.85); color: #fff; padding: 8px 16px;
+        border-radius: 4px; font-size: 0.8rem; z-index: 500; display: none;
+    }
+    .toast.show { display: block; animation: fadeToast 2s ease forwards; }
+    @keyframes fadeToast {
+        0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        15%, 85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; }
+    }
 
-    @media (max-width: 500px) {
-        .header h1 { font-size: 1.2rem; }
-        .zones-grid { grid-template-columns: 1fr 1fr; }
-        .mining-area { grid-template-columns: repeat(4, 1fr); }
-        .battle-options { grid-template-columns: 1fr; }
-        .achievements-grid { grid-template-columns: repeat(2, 1fr); }
+    .gameover-screen {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(139,0,0,0.9); display: none;
+        align-items: center; justify-content: center; flex-direction: column; z-index: 2000;
+    }
+    .gameover-screen.show { display: flex; }
+    .gameover-screen h1 { color: #fff; font-size: 1.8rem; margin-bottom: 15px; }
+    .gameover-screen p { color: #faa; margin-bottom: 20px; }
+    .gameover-screen button { padding: 12px 25px; font-size: 1rem; background: #444; border: 3px solid #666; color: white; cursor: pointer; }
+
+    .start-screen {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(180deg, #87CEEB 0%, #87CEEB 55%, #22c55e 55%);
+        display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 3000;
+    }
+    .start-screen.hidden { display: none; }
+    .start-logo { font-size: 4.5rem; margin-bottom: 15px; animation: bounce 1s infinite; }
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .start-title { font-size: 1.5rem; color: #fff; text-shadow: 3px 3px 0 #333; margin-bottom: 8px; text-align: center; }
+    .start-sub { color: #333; margin-bottom: 25px; font-size: 0.85rem; }
+    .start-btn {
+        background: #4ade80; border: 4px solid #22c55e; color: #fff;
+        padding: 14px 35px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+        font-family: inherit; text-shadow: 1px 1px #333;
+    }
+    .start-btn:hover { background: #22c55e; }
+    .tips { margin-top: 25px; color: #333; font-size: 0.7rem; text-align: center; line-height: 1.6; }
+
+    @media (max-width: 400px) {
+        .tile, .player, .entity { width: 40px; height: 40px; font-size: 1.3rem; }
+        .slot { width: 38px; height: 38px; font-size: 1.1rem; }
+        .dpad { grid-template-columns: repeat(3, 38px); grid-template-rows: repeat(3, 38px); }
     }
 </style>
 ```
 
 </head>
 <body>
-    <button class="sound-btn" onclick="toggleSound()">🔊</button>
-    <div class="clouds"><div class="cloud"></div><div class="cloud"></div><div class="cloud"></div></div>
+    <div class="start-screen" id="startScreen">
+        <div class="start-logo">⛏️</div>
+        <h1 class="start-title">小蛹的 Minecraft<br>生存冒險</h1>
+        <p class="start-sub">探索・收集・合成・生存！</p>
+        <button class="start-btn" onclick="startGame()">開始生存 ▶</button>
+        <div class="tips">
+            🎮 方向鍵/WASD 移動<br>
+            👆 點地圖挖掘資源<br>
+            ⚔️ 點怪物或按攻擊鍵戰鬥<br>
+            🔨 收集材料合成工具武器
+        </div>
+    </div>
 
 ```
-<div class="start-modal" id="startModal">
-    <div class="start-content">
-        <div class="start-logo">⛏️</div>
-        <h1 class="start-title">小蛹的 Minecraft 冒險</h1>
-        <p class="start-subtitle">準備好探索了嗎？</p>
-        <input type="text" class="name-input" id="nameInput" placeholder="輸入名字..." maxlength="10">
-        <button class="mc-btn primary" onclick="startGame()">開始遊戲 ▶</button>
+<div class="game-container">
+    <div class="top-bar">
+        <div class="stats">
+            <div class="stat-row"><span class="stat-icon">❤️</span><div class="hearts" id="hearts"></div></div>
+            <div class="stat-row"><span class="stat-icon">🍖</span><div class="foods" id="foods"></div></div>
+        </div>
+        <div class="game-info">
+            <div class="day-badge day" id="dayBadge">☀️ 第1天</div>
+            <div>💰 <span id="score">0</span></div>
+        </div>
+    </div>
+
+    <div class="game-world" id="gameWorld">
+        <div class="world-map" id="worldMap"></div>
+        <div class="player" id="player">🧑</div>
+    </div>
+
+    <div class="bottom-bar">
+        <div class="hotbar" id="hotbar"></div>
+        <div class="controls">
+            <div class="dpad">
+                <div class="dpad-btn empty"></div>
+                <div class="dpad-btn" onclick="move(0,-1)">⬆️</div>
+                <div class="dpad-btn empty"></div>
+                <div class="dpad-btn" onclick="move(-1,0)">⬅️</div>
+                <div class="dpad-btn empty"></div>
+                <div class="dpad-btn" onclick="move(1,0)">➡️</div>
+                <div class="dpad-btn empty"></div>
+                <div class="dpad-btn" onclick="move(0,1)">⬇️</div>
+                <div class="dpad-btn empty"></div>
+            </div>
+            <div class="action-btns">
+                <button class="act-btn red" onclick="attackNearest()">⚔️ 攻擊</button>
+                <button class="act-btn green" onclick="openCraft()">🔨 合成</button>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="container">
-    <header class="header">
-        <span class="mascot">⛏️</span>
-        <h1>小蛹的 Minecraft 冒險世界</h1>
-        <p class="subtitle">挖礦 ⛏️ 戰鬥 ⚔️ 建造 🏗️</p>
-    </header>
-
-    <div class="player-hud">
-        <div class="player-skin">😊</div>
-        <div class="player-info">
-            <div class="player-name" id="playerName">Steve</div>
-            <div class="health-bar" id="healthBar"></div>
-            <div class="exp-bar-container">
-                <div class="exp-bar" id="expBar" style="width: 0%"></div>
-                <div class="exp-text">Lv.<span id="playerLevel">1</span></div>
-            </div>
-        </div>
-        <div class="inventory">
-            <div class="inv-slot">💎<span class="count" id="diamondCount">0</span></div>
-            <div class="inv-slot">🥇<span class="count" id="goldCount">0</span></div>
-            <div class="inv-slot">🪨<span class="count" id="ironCount">0</span></div>
-            <div class="inv-slot">⬛<span class="count" id="coalCount">0</span></div>
-        </div>
+<div class="modal" id="craftModal">
+    <div class="modal-box">
+        <h2 class="modal-title">🔨 合成台</h2>
+        <div id="recipeList"></div>
+        <button class="close-btn" onclick="closeCraft()">關閉</button>
     </div>
+</div>
 
-    <div id="mainScreen">
-        <h2 class="section-title">🗺️ 選擇冒險</h2>
-        <div class="zones-grid">
-            <div class="zone-card" onclick="openGame('mining')">
-                <span class="zone-icon">⛏️</span>
-                <div class="zone-name">挖礦探險</div>
-                <div class="zone-desc">挖掘稀有寶石</div>
-                <div class="zone-reward">💎 獲得礦石</div>
-            </div>
-            <div class="zone-card" onclick="openGame('battle')">
-                <span class="zone-icon">⚔️</span>
-                <div class="zone-name">怪物戰鬥</div>
-                <div class="zone-desc">打敗怪物</div>
-                <div class="zone-reward">⭐ 獲得經驗</div>
-            </div>
-            <div class="zone-card" onclick="openGame('build')">
-                <span class="zone-icon">🏗️</span>
-                <div class="zone-name">建造工坊</div>
-                <div class="zone-desc">完成建造挑戰</div>
-                <div class="zone-reward">🏆 獲得成就</div>
-            </div>
-            <div class="zone-card" id="bossZone" onclick="openGame('boss')">
-                <span class="zone-icon">🐉</span>
-                <div class="zone-name">終界龍</div>
-                <div class="zone-desc">最終挑戰</div>
-                <div class="zone-reward">👑 傳說獎勵</div>
-            </div>
-        </div>
+<div class="toast" id="toast"></div>
 
-        <div class="achievements-section">
-            <h2 class="section-title">🏆 成就</h2>
-            <div class="achievements-grid">
-                <div class="achievement" id="ach-first-diamond"><div class="achievement-icon">💎</div><div class="achievement-name">第一顆鑽石</div></div>
-                <div class="achievement" id="ach-monster-slayer"><div class="achievement-icon">⚔️</div><div class="achievement-name">怪物殺手</div></div>
-                <div class="achievement" id="ach-builder"><div class="achievement-icon">🏗️</div><div class="achievement-name">建築大師</div></div>
-                <div class="achievement" id="ach-rich"><div class="achievement-icon">🥇</div><div class="achievement-name">黃金礦工</div></div>
-                <div class="achievement" id="ach-dragon"><div class="achievement-icon">🐉</div><div class="achievement-name">屠龍勇士</div></div>
-                <div class="achievement" id="ach-master"><div class="achievement-icon">👑</div><div class="achievement-name">傳說玩家</div></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="game-screen" id="gameScreen">
-        <div class="game-header">
-            <h2 class="game-title" id="gameTitle">⛏️ 挖礦探險</h2>
-            <div class="game-stats">
-                <div class="stat-badge">分數: <span id="gameScore">0</span></div>
-                <div class="game-lives" id="gameLives">❤️❤️❤️</div>
-            </div>
-        </div>
-        <div id="gameContent"></div>
-        <div style="text-align: center; margin-top: 15px;">
-            <button class="mc-btn" onclick="backToMain()">← 返回</button>
-        </div>
-    </div>
-
-    <div class="game-screen" id="resultScreen" style="display: none;">
-        <div class="result-screen">
-            <div class="result-icon" id="resultIcon">🎉</div>
-            <h2 class="result-title win" id="resultTitle">任務完成！</h2>
-            <p class="result-message" id="resultMessage">太厲害了！</p>
-            <div class="loot-display">
-                <div class="loot-title">🎁 獲得獎勵</div>
-                <div class="loot-items" id="lootItems"></div>
-            </div>
-            <button class="mc-btn primary" onclick="playAgain()">再玩一次 🔄</button>
-            <button class="mc-btn" onclick="backToMain()">返回主畫面</button>
-        </div>
-    </div>
+<div class="gameover-screen" id="gameoverScreen">
+    <h1>💀 你死了</h1>
+    <p id="deathMsg">被怪物擊敗</p>
+    <button onclick="restart()">重新開始</button>
 </div>
 
 <script>
-    let audioCtx = null, soundEnabled = true;
-    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-    function toggleSound() { soundEnabled = !soundEnabled; document.querySelector('.sound-btn').textContent = soundEnabled ? '🔊' : '🔇'; }
-    function playSound(type) {
-        if (!soundEnabled) return;
-        initAudio();
-        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.connect(g); g.connect(audioCtx.destination);
-        const t = audioCtx.currentTime;
-        if (type === 'mine') { o.frequency.setValueAtTime(150, t); g.gain.setValueAtTime(0.2, t); g.gain.linearRampToValueAtTime(0, t+0.1); o.type = 'square'; o.start(t); o.stop(t+0.1); }
-        else if (type === 'diamond') { [523,659,784,1047].forEach((f,i) => { const os = audioCtx.createOscillator(), gs = audioCtx.createGain(); os.connect(gs); gs.connect(audioCtx.destination); os.frequency.setValueAtTime(f, t+i*0.07); gs.gain.setValueAtTime(0.15, t+i*0.07); gs.gain.linearRampToValueAtTime(0, t+i*0.07+0.1); os.start(t+i*0.07); os.stop(t+i*0.07+0.1); }); }
-        else if (type === 'hurt') { o.frequency.setValueAtTime(200, t); o.frequency.linearRampToValueAtTime(80, t+0.2); g.gain.setValueAtTime(0.25, t); g.gain.linearRampToValueAtTime(0, t+0.2); o.type = 'sawtooth'; o.start(t); o.stop(t+0.2); }
-        else if (type === 'win') { [523,587,659,784,880,1047].forEach((f,i) => { const os = audioCtx.createOscillator(), gs = audioCtx.createGain(); os.connect(gs); gs.connect(audioCtx.destination); os.frequency.setValueAtTime(f, t+i*0.08); gs.gain.setValueAtTime(0.15, t+i*0.08); gs.gain.linearRampToValueAtTime(0, t+i*0.08+0.12); os.start(t+i*0.08); os.stop(t+i*0.08+0.12); }); }
-        else if (type === 'click') { o.frequency.setValueAtTime(600, t); g.gain.setValueAtTime(0.1, t); g.gain.linearRampToValueAtTime(0, t+0.05); o.type = 'square'; o.start(t); o.stop(t+0.05); }
-        else if (type === 'explosion') { o.frequency.setValueAtTime(80, t); o.frequency.linearRampToValueAtTime(30, t+0.25); g.gain.setValueAtTime(0.3, t); g.gain.linearRampToValueAtTime(0, t+0.25); o.type = 'sawtooth'; o.start(t); o.stop(t+0.25); }
-    }
-
-    let gameState = { playerName: '', level: 1, exp: 0, diamonds: 0, gold: 0, iron: 0, coal: 0, achievements: [], currentGame: null, gameScore: 0, gameLives: 3, monstersKilled: 0, buildsCompleted: 0 };
-
-    const monsters = [
-        { name: '殭屍', emoji: '🧟', hp: 30 },
-        { name: '骷髏', emoji: '💀', hp: 25 },
-        { name: '蜘蛛', emoji: '🕷️', hp: 20 },
-        { name: '苦力怕', emoji: '💚', hp: 35 },
-        { name: '乾坤巨靈', emoji: '👻', hp: 40 }
+    const SIZE = 25, TILE = 48;
+    const ITEMS = {
+        wood: { n: '木頭', i: '🪵' }, stone: { n: '石頭', i: '🪨' }, coal: { n: '煤炭', i: '⬛' },
+        iron: { n: '鐵礦', i: '🔩' }, gold: { n: '金礦', i: '🥇' }, diamond: { n: '鑽石', i: '💎' },
+        meat: { n: '肉', i: '🍖' }, apple: { n: '蘋果', i: '🍎' },
+        woodSword: { n: '木劍', i: '🗡️', dmg: 3 }, stoneSword: { n: '石劍', i: '⚔️', dmg: 5 },
+        ironSword: { n: '鐵劍', i: '🔪', dmg: 8 }, diamondSword: { n: '鑽石劍', i: '💠', dmg: 12 },
+        woodPick: { n: '木鎬', i: '⛏️', pow: 1 }, stonePick: { n: '石鎬', i: '⛏️', pow: 2 },
+        ironPick: { n: '鐵鎬', i: '⛏️', pow: 3 },
+    };
+    const RECIPES = [
+        { r: 'woodSword', i: '🗡️', n: '木劍', c: { wood: 3 }, d: '攻擊+3' },
+        { r: 'woodPick', i: '⛏️', n: '木鎬', c: { wood: 5 }, d: '挖礦+1' },
+        { r: 'stoneSword', i: '⚔️', n: '石劍', c: { stone: 3, wood: 2 }, d: '攻擊+5' },
+        { r: 'stonePick', i: '⛏️', n: '石鎬', c: { stone: 5, wood: 2 }, d: '挖礦+2' },
+        { r: 'ironSword', i: '🔪', n: '鐵劍', c: { iron: 3, wood: 2 }, d: '攻擊+8' },
+        { r: 'ironPick', i: '⛏️', n: '鐵鎬', c: { iron: 5, wood: 2 }, d: '挖礦+3' },
+        { r: 'diamondSword', i: '💠', n: '鑽石劍', c: { diamond: 3, wood: 2 }, d: '攻擊+12' },
+    ];
+    const MOBS = [
+        { n: '殭屍', i: '🧟', hp: 20, dmg: 2 }, { n: '骷髏', i: '💀', hp: 15, dmg: 3 },
+        { n: '蜘蛛', i: '🕷️', hp: 12, dmg: 2 }, { n: '苦力怕', i: '💚', hp: 20, dmg: 5 },
     ];
 
-    const mathQuestions = [
-        { q: '24 × 6 = ?', a: '144', opts: ['124', '134', '144', '154'] },
-        { q: '156 ÷ 12 = ?', a: '13', opts: ['11', '12', '13', '14'] },
-        { q: '678 + 456 = ?', a: '1134', opts: ['1124', '1134', '1144', '1234'] },
-        { q: '1000 - 387 = ?', a: '613', opts: ['603', '613', '623', '713'] },
-        { q: '18 × 7 = ?', a: '126', opts: ['116', '121', '126', '136'] },
-        { q: '108 ÷ 9 = ?', a: '12', opts: ['10', '11', '12', '13'] },
-        { q: '845 - 379 = ?', a: '466', opts: ['456', '466', '476', '566'] },
-        { q: '32 × 5 = ?', a: '160', opts: ['150', '155', '160', '165'] },
-        { q: '225 ÷ 5 = ?', a: '45', opts: ['40', '44', '45', '50'] },
-        { q: '777 + 333 = ?', a: '1110', opts: ['1010', '1100', '1110', '1111'] },
-        { q: '45 × 8 = ?', a: '360', opts: ['340', '350', '360', '380'] },
-        { q: '196 ÷ 14 = ?', a: '14', opts: ['12', '13', '14', '16'] }
-    ];
+    let G = { px: 12, py: 12, hp: 10, maxHp: 10, hunger: 10, maxHunger: 10, inv: {}, weapon: null, pick: null, day: 1, night: false, score: 0, world: [], mobs: [], running: false };
 
-    const buildRecipes = [
-        { name: '工作台', pattern: ['🪵','🪵','⬜','🪵','🪵','⬜','⬜','⬜','⬜'], materials: ['🪵'] },
-        { name: '木劍', pattern: ['⬜','🪵','⬜','⬜','🪵','⬜','⬜','🪨','⬜'], materials: ['🪵','🪨'] },
-        { name: '火把', pattern: ['⬜','⬛','⬜','⬜','🪨','⬜','⬜','⬜','⬜'], materials: ['⬛','🪨'] }
-    ];
-
-    function loadGame() {
-        const saved = localStorage.getItem('xiaoyongMinecraft');
-        if (saved) { gameState = JSON.parse(saved); document.getElementById('startModal').classList.add('hidden'); updateUI(); }
-        renderHearts();
+    function genWorld() {
+        G.world = [];
+        for (let y = 0; y < SIZE; y++) {
+            G.world[y] = [];
+            for (let x = 0; x < SIZE; x++) {
+                let t = 'grass', obj = null, hp = 0;
+                const r = Math.random();
+                if (r < 0.05) t = 'water';
+                else if (r < 0.1) t = 'sand';
+                else if (r < 0.22) {
+                    t = 'stone';
+                    const o = Math.random();
+                    if (o < 0.08) { t = 'diamond-ore'; hp = 5; }
+                    else if (o < 0.2) { t = 'gold-ore'; hp = 4; }
+                    else if (o < 0.4) { t = 'iron-ore'; hp = 3; }
+                    else if (o < 0.65) { t = 'coal-ore'; hp = 2; }
+                    else hp = 2;
+                } else {
+                    const o = Math.random();
+                    if (o < 0.12) { obj = 'tree'; hp = 3; }
+                    else if (o < 0.18) { obj = 'rock'; hp = 2; }
+                }
+                G.world[y][x] = { t, obj, hp };
+            }
+        }
+        G.world[12][12] = { t: 'grass', obj: null, hp: 0 };
     }
 
-    function saveGame() { localStorage.setItem('xiaoyongMinecraft', JSON.stringify(gameState)); }
-
-    function startGame() {
-        const name = document.getElementById('nameInput').value.trim();
-        if (name) { gameState.playerName = name; document.getElementById('startModal').classList.add('hidden'); playSound('win'); updateUI(); saveGame(); }
-        else { alert('請輸入名字！'); }
+    function render() {
+        const map = document.getElementById('worldMap');
+        map.innerHTML = '';
+        map.style.width = SIZE * TILE + 'px';
+        map.style.height = SIZE * TILE + 'px';
+        for (let y = 0; y < SIZE; y++) {
+            for (let x = 0; x < SIZE; x++) {
+                const c = G.world[y][x];
+                const d = document.createElement('div');
+                d.className = 'tile ' + c.t;
+                d.style.left = x * TILE + 'px';
+                d.style.top = y * TILE + 'px';
+                if (c.obj === 'tree') d.innerHTML = '🌲';
+                else if (c.obj === 'rock') d.innerHTML = '🪨';
+                else if (c.t === 'coal-ore') d.innerHTML = '⬛';
+                else if (c.t === 'iron-ore') d.innerHTML = '🔩';
+                else if (c.t === 'gold-ore') d.innerHTML = '🥇';
+                else if (c.t === 'diamond-ore') d.innerHTML = '💎';
+                else if (c.t === 'water') d.innerHTML = '🌊';
+                d.onclick = () => interact(x, y);
+                map.appendChild(d);
+            }
+        }
+        renderMobs();
+        updateCam();
     }
 
-    function renderHearts() {
-        const hb = document.getElementById('healthBar');
+    function renderMobs() {
+        document.querySelectorAll('.entity').forEach(e => e.remove());
+        const map = document.getElementById('worldMap');
+        G.mobs.forEach((m, i) => {
+            const d = document.createElement('div');
+            d.className = 'entity';
+            d.style.left = m.x * TILE + 'px';
+            d.style.top = m.y * TILE + 'px';
+            d.innerHTML = `<div class="entity-hp"><div class="entity-hp-fill" style="width:${(m.hp/m.maxHp)*100}%"></div></div>${m.i}`;
+            d.onclick = () => attackMob(i);
+            map.appendChild(d);
+        });
+    }
+
+    function updateCam() {
+        const gw = document.getElementById('gameWorld');
+        const map = document.getElementById('worldMap');
+        const pl = document.getElementById('player');
+        const ox = gw.clientWidth / 2 - G.px * TILE - TILE / 2;
+        const oy = gw.clientHeight / 2 - G.py * TILE - TILE / 2;
+        map.style.transform = `translate(${ox}px,${oy}px)`;
+        pl.style.left = gw.clientWidth / 2 - TILE / 2 + 'px';
+        pl.style.top = gw.clientHeight / 2 - TILE / 2 + 'px';
+    }
+
+    function renderUI() {
+        let h = ''; for (let i = 0; i < G.maxHp; i++) h += i < G.hp ? '❤️' : '🖤';
+        document.getElementById('hearts').innerHTML = h;
+        let f = ''; for (let i = 0; i < G.maxHunger; i++) f += i < G.hunger ? '🍖' : '🦴';
+        document.getElementById('foods').innerHTML = f;
+        const db = document.getElementById('dayBadge');
+        db.textContent = (G.night ? '🌙' : '☀️') + ` 第${G.day}天`;
+        db.className = 'day-badge ' + (G.night ? 'night' : 'day');
+        document.getElementById('gameWorld').className = 'game-world' + (G.night ? ' night' : '');
+        document.getElementById('score').textContent = G.score;
+        renderHotbar();
+    }
+
+    function renderHotbar() {
+        const hb = document.getElementById('hotbar');
         hb.innerHTML = '';
-        for (let i = 0; i < 5; i++) { const h = document.createElement('div'); h.className = 'heart'; hb.appendChild(h); }
-    }
-
-    function updateUI() {
-        document.getElementById('playerName').textContent = gameState.playerName || 'Steve';
-        document.getElementById('playerLevel').textContent = gameState.level;
-        document.getElementById('expBar').style.width = (gameState.exp % 100) + '%';
-        document.getElementById('diamondCount').textContent = gameState.diamonds;
-        document.getElementById('goldCount').textContent = gameState.gold;
-        document.getElementById('ironCount').textContent = gameState.iron;
-        document.getElementById('coalCount').textContent = gameState.coal;
-        gameState.achievements.forEach(a => { const el = document.getElementById('ach-' + a); if (el) el.classList.add('unlocked'); });
-        const bz = document.getElementById('bossZone');
-        if (gameState.level >= 5) { bz.classList.remove('locked'); const li = bz.querySelector('.lock-icon'); if (li) li.remove(); }
-        else { if (!bz.classList.contains('locked')) { bz.classList.add('locked'); if (!bz.querySelector('.lock-icon')) bz.innerHTML += '<div class="lock-icon">🔒</div>'; } }
-    }
-
-    function unlockAchievement(id) { if (!gameState.achievements.includes(id)) { gameState.achievements.push(id); playSound('win'); saveGame(); updateUI(); } }
-    function addExp(amt) { gameState.exp += amt; const nl = Math.floor(gameState.exp / 100) + 1; if (nl > gameState.level) { gameState.level = nl; playSound('win'); } saveGame(); updateUI(); }
-
-    function openGame(type) {
-        if (type === 'boss' && gameState.level < 5) { playSound('hurt'); alert('需要 Lv.5 才能挑戰！\n目前：Lv.' + gameState.level); return; }
-        playSound('click');
-        gameState.currentGame = type; gameState.gameScore = 0; gameState.gameLives = 3;
-        document.getElementById('mainScreen').style.display = 'none';
-        document.getElementById('gameScreen').style.display = 'block';
-        document.getElementById('resultScreen').style.display = 'none';
-        const titles = { mining: '⛏️ 挖礦探險', battle: '⚔️ 怪物戰鬥', build: '🏗️ 建造工坊', boss: '🐉 終界龍' };
-        document.getElementById('gameTitle').textContent = titles[type];
-        updateGameLives();
-        if (type === 'mining') initMining();
-        else if (type === 'battle') initBattle();
-        else if (type === 'build') initBuild();
-        else if (type === 'boss') initBoss();
-    }
-
-    function updateGameLives() { document.getElementById('gameLives').textContent = '❤️'.repeat(gameState.gameLives) + '🖤'.repeat(3 - gameState.gameLives); }
-
-    // === 挖礦 ===
-    let miningGrid = [], miningRevealed = 0;
-    function initMining() {
-        miningRevealed = 0;
-        const ores = ['diamond', 'emerald', 'gold', 'gold', 'iron', 'iron', 'iron', 'coal', 'coal', 'coal', 'stone', 'stone', 'stone', 'stone', 'stone', 'creeper', 'creeper', 'stone', 'stone', 'stone'];
-        for (let i = ores.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ores[i], ores[j]] = [ores[j], ores[i]]; }
-        miningGrid = ores;
-        document.getElementById('gameContent').innerHTML = `
-            <p style="text-align:center;color:#CCC;font-size:0.75rem;margin-bottom:10px;">點擊方塊挖掘！找寶石💎 小心苦力怕💥</p>
-            <div class="mining-area">${ores.map((_, i) => `<div class="mine-block" onclick="mineBlock(${i})">❓</div>`).join('')}</div>
-            <p style="text-align:center;color:white;font-size:0.75rem;">已挖: <span id="minedCount">0</span>/20</p>
-        `;
-    }
-
-    function mineBlock(i) {
-        const blocks = document.querySelectorAll('.mine-block'), b = blocks[i];
-        if (b.classList.contains('revealed')) return;
-        playSound('mine'); b.classList.add('revealed'); miningRevealed++;
-        document.getElementById('minedCount').textContent = miningRevealed;
-        const ore = miningGrid[i];
-        if (ore === 'diamond') { b.classList.add('diamond-ore'); b.textContent = '💎'; gameState.diamonds++; gameState.gameScore += 50; playSound('diamond'); unlockAchievement('first-diamond'); }
-        else if (ore === 'emerald') { b.classList.add('emerald-ore'); b.textContent = '💚'; gameState.gameScore += 40; playSound('diamond'); }
-        else if (ore === 'gold') { b.classList.add('gold-ore'); b.textContent = '🥇'; gameState.gold++; gameState.gameScore += 30; if (gameState.gold >= 10) unlockAchievement('rich'); }
-        else if (ore === 'iron') { b.classList.add('iron-ore'); b.textContent = '🪨'; gameState.iron++; gameState.gameScore += 20; }
-        else if (ore === 'coal') { b.classList.add('coal-ore'); b.textContent = '⬛'; gameState.coal++; gameState.gameScore += 10; }
-        else if (ore === 'creeper') { b.classList.add('creeper'); b.textContent = '💥'; gameState.gameLives--; playSound('explosion'); updateGameLives(); if (gameState.gameLives <= 0) { setTimeout(() => showResult(false), 400); return; } }
-        else { b.textContent = 'ite石'; gameState.gameScore += 5; }
-        document.getElementById('gameScore').textContent = gameState.gameScore;
-        saveGame(); updateUI();
-        if (miningRevealed >= 20) setTimeout(() => showResult(true), 400);
-    }
-
-    // === 戰鬥 ===
-    let currentMonster, monsterHp, monsterMaxHp, battleRound = 0;
-    function initBattle() { battleRound = 0; nextMonster(); }
-    function nextMonster() {
-        if (battleRound >= 5) { unlockAchievement('monster-slayer'); showResult(true); return; }
-        currentMonster = monsters[Math.floor(Math.random() * monsters.length)];
-        monsterMaxHp = currentMonster.hp; monsterHp = monsterMaxHp; battleRound++;
-        showBattleQ();
-    }
-    function showBattleQ() {
-        const q = mathQuestions[Math.floor(Math.random() * mathQuestions.length)];
-        const opts = [...q.opts].sort(() => Math.random() - 0.5);
-        document.getElementById('gameContent').innerHTML = `
-            <div class="battle-area">
-                <div class="monster-display">${currentMonster.emoji}</div>
-                <div class="monster-name">${currentMonster.name}</div>
-                <div class="monster-hp-bar"><div class="monster-hp" style="width:${(monsterHp/monsterMaxHp)*100}%"></div><div class="monster-hp-text">${monsterHp}/${monsterMaxHp}</div></div>
-                <div class="battle-question">${q.q}</div>
-                <div class="battle-options">${opts.map(o => `<button class="battle-btn" onclick="battleAns('${o}','${q.a}')">${o}</button>`).join('')}</div>
-            </div>
-        `;
-    }
-    function battleAns(sel, cor) {
-        const btns = document.querySelectorAll('.battle-btn');
-        btns.forEach(b => { b.disabled = true; if (b.textContent === cor) b.classList.add('correct'); if (b.textContent === sel && sel !== cor) b.classList.add('wrong'); });
-        if (sel === cor) {
-            playSound('mine'); monsterHp -= 15; gameState.gameScore += 20;
-            document.getElementById('gameScore').textContent = gameState.gameScore;
-            if (monsterHp <= 0) { gameState.monstersKilled++; addExp(25); setTimeout(nextMonster, 600); }
-            else setTimeout(showBattleQ, 600);
-        } else {
-            playSound('hurt'); gameState.gameLives--; updateGameLives();
-            if (gameState.gameLives <= 0) setTimeout(() => showResult(false), 600);
-            else setTimeout(showBattleQ, 600);
+        const items = Object.entries(G.inv).slice(0, 9);
+        for (let i = 0; i < 9; i++) {
+            const s = document.createElement('div');
+            s.className = 'slot';
+            if (items[i]) {
+                const [id, qty] = items[i];
+                const it = ITEMS[id];
+                if (it) {
+                    s.innerHTML = it.i + (qty > 1 ? `<span class="qty">${qty}</span>` : '');
+                    s.onclick = () => useItem(id);
+                    if (id === G.weapon || id === G.pick) s.classList.add('selected');
+                }
+            }
+            hb.appendChild(s);
         }
     }
 
-    // === 建造 ===
-    let currentRecipe, buildGrid, selectedMat, buildRound = 0;
-    function initBuild() { buildRound = 0; nextBuild(); }
-    function nextBuild() {
-        if (buildRound >= 3) { gameState.buildsCompleted++; if (gameState.buildsCompleted >= 3) unlockAchievement('builder'); showResult(true); return; }
-        currentRecipe = buildRecipes[buildRound];
-        buildGrid = Array(9).fill('⬜'); selectedMat = null; buildRound++;
-        showBuildUI();
-    }
-    function showBuildUI() {
-        document.getElementById('gameContent').innerHTML = `
-            <div class="build-area">
-                <div class="build-target">
-                    <div class="build-target-title">建造：${currentRecipe.name}</div>
-                    <div class="build-pattern">${currentRecipe.pattern.map(p => `<div class="pattern-block">${p}</div>`).join('')}</div>
-                </div>
-                <p style="color:#AAA;font-size:0.7rem;margin-bottom:10px;">選材料，點格子放置</p>
-                <div class="build-grid">${buildGrid.map((b, i) => `<div class="build-slot ${b !== '⬜' ? 'filled' : ''}" onclick="placeMat(${i})">${b}</div>`).join('')}</div>
-                <div class="build-materials">${currentRecipe.materials.map(m => `<button class="material-btn ${selectedMat === m ? 'selected' : ''}" onclick="selectMat('${m}')">${m}</button>`).join('')}<button class="material-btn" onclick="selectMat('⬜')">🗑️</button></div>
-                <button class="mc-btn primary" style="margin-top:12px;" onclick="checkBuild()">完成 ✓</button>
-            </div>
-        `;
-    }
-    function selectMat(m) { selectedMat = m; playSound('click'); showBuildUI(); }
-    function placeMat(i) { if (!selectedMat) return; playSound('mine'); buildGrid[i] = selectedMat; showBuildUI(); }
-    function checkBuild() {
-        if (buildGrid.every((b, i) => b === currentRecipe.pattern[i])) {
-            playSound('diamond'); gameState.gameScore += 50; addExp(30);
-            document.getElementById('gameScore').textContent = gameState.gameScore;
-            setTimeout(nextBuild, 500);
-        } else { playSound('hurt'); gameState.gameLives--; updateGameLives(); if (gameState.gameLives <= 0) setTimeout(() => showResult(false), 400); else alert('建造錯誤！再試一次'); }
+    function move(dx, dy) {
+        if (!G.running) return;
+        const nx = G.px + dx, ny = G.py + dy;
+        if (nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE) return;
+        const c = G.world[ny][nx];
+        if (c.t === 'water') { toast('不能進入水中！'); return; }
+        if (c.obj) { toast('有障礙物，挖掉它！'); return; }
+        G.px = nx; G.py = ny;
+        updateCam();
+        if (Math.random() < 0.1) { G.hunger = Math.max(0, G.hunger - 1); if (G.hunger === 0) hurt(1, '餓死了'); renderUI(); }
+        checkMobHit();
     }
 
-    // === Boss ===
-    let bossHp = 100;
-    function initBoss() { bossHp = 100; showBossQ(); }
-    function showBossQ() {
-        const q = mathQuestions[Math.floor(Math.random() * mathQuestions.length)];
-        const opts = [...q.opts].sort(() => Math.random() - 0.5);
-        document.getElementById('gameContent').innerHTML = `
-            <div class="battle-area">
-                <div class="monster-display" style="font-size:6rem;">🐉</div>
-                <div class="monster-name" style="color:#9B59B6;">終界龍</div>
-                <div class="monster-hp-bar" style="max-width:300px;"><div class="monster-hp" style="width:${bossHp}%;background:linear-gradient(180deg,#9B59B6,#6C3483);"></div><div class="monster-hp-text">${bossHp}/100</div></div>
-                <div class="battle-question">${q.q}</div>
-                <div class="battle-options">${opts.map(o => `<button class="battle-btn" onclick="bossAns('${o}','${q.a}')">${o}</button>`).join('')}</div>
-            </div>
-        `;
-    }
-    function bossAns(sel, cor) {
-        const btns = document.querySelectorAll('.battle-btn');
-        btns.forEach(b => { b.disabled = true; if (b.textContent === cor) b.classList.add('correct'); if (b.textContent === sel && sel !== cor) b.classList.add('wrong'); });
-        if (sel === cor) {
-            playSound('mine'); bossHp -= 20; gameState.gameScore += 40;
-            document.getElementById('gameScore').textContent = gameState.gameScore;
-            if (bossHp <= 0) { unlockAchievement('dragon'); if (gameState.achievements.length >= 5) unlockAchievement('master'); addExp(150); setTimeout(() => showResult(true, true), 600); }
-            else setTimeout(showBossQ, 600);
-        } else { playSound('hurt'); gameState.gameLives--; updateGameLives(); if (gameState.gameLives <= 0) setTimeout(() => showResult(false), 600); else setTimeout(showBossQ, 600); }
-    }
-
-    // === 結果 ===
-    function showResult(won, isBoss = false) {
-        document.getElementById('gameScreen').style.display = 'none';
-        document.getElementById('resultScreen').style.display = 'block';
-        document.getElementById('resultIcon').textContent = won ? (isBoss ? '🐉' : '🎉') : '💀';
-        document.getElementById('resultTitle').textContent = won ? (isBoss ? '屠龍成功！' : '任務完成！') : '任務失敗...';
-        document.getElementById('resultTitle').className = 'result-title ' + (won ? 'win' : 'lose');
-        document.getElementById('resultMessage').textContent = won ? (isBoss ? '你打敗了終界龍！' : '太厲害了！') : '再挑戰一次！';
-        let loot = '';
-        if (won) { playSound('win'); loot = `<div class="loot-item"><span class="loot-item-icon">⭐</span><div class="loot-item-count">+${gameState.gameScore}分</div></div><div class="loot-item"><span class="loot-item-icon">📈</span><div class="loot-item-count">經驗UP</div></div>`; if (isBoss) loot += `<div class="loot-item"><span class="loot-item-icon">🥚</span><div class="loot-item-count">龍蛋</div></div>`; }
-        else { playSound('hurt'); loot = `<div class="loot-item"><span class="loot-item-icon">😢</span><div class="loot-item-count">再接再厲</div></div>`; }
-        document.getElementById('lootItems').innerHTML = loot;
-        saveGame(); updateUI();
+    function interact(x, y) {
+        if (!G.running) return;
+        const dist = Math.abs(x - G.px) + Math.abs(y - G.py);
+        if (dist > 2) { toast('太遠了！'); return; }
+        const c = G.world[y][x];
+        const pow = G.pick && ITEMS[G.pick] ? ITEMS[G.pick].pow : 1;
+        if (c.obj === 'tree') {
+            c.hp -= pow;
+            if (c.hp <= 0) { c.obj = null; addItem('wood', 2 + Math.floor(Math.random() * 2)); if (Math.random() < 0.3) addItem('apple', 1); toast('獲得木頭！'); G.score += 5; }
+            else toast(`砍樹中...(${c.hp})`);
+        } else if (c.obj === 'rock' || c.t === 'stone') {
+            c.hp -= pow;
+            if (c.hp <= 0) { c.obj = null; if (c.t !== 'grass') c.t = 'dirt'; addItem('stone', 1 + Math.floor(Math.random() * 2)); toast('獲得石頭！'); G.score += 5; }
+            else toast(`挖掘中...(${c.hp})`);
+        } else if (c.t.includes('-ore')) {
+            c.hp -= pow;
+            if (c.hp <= 0) {
+                const ore = c.t.split('-')[0];
+                c.t = 'dirt';
+                if (ore === 'coal') addItem('coal', 1 + Math.floor(Math.random() * 2));
+                else if (ore === 'iron') addItem('iron', 1);
+                else if (ore === 'gold') addItem('gold', 1);
+                else if (ore === 'diamond') addItem('diamond', 1);
+                toast(`獲得${ore}！`);
+                G.score += ore === 'diamond' ? 50 : ore === 'gold' ? 30 : 10;
+            } else toast(`挖礦中...(${c.hp})`);
+        }
+        render(); renderUI();
     }
 
-    function playAgain() { playSound('click'); openGame(gameState.currentGame); }
-    function backToMain() { playSound('click'); document.getElementById('mainScreen').style.display = 'block'; document.getElementById('gameScreen').style.display = 'none'; document.getElementById('resultScreen').style.display = 'none'; updateUI(); }
+    function addItem(id, n = 1) { G.inv[id] = (G.inv[id] || 0) + n; renderHotbar(); }
+    function removeItem(id, n = 1) { if (G.inv[id]) { G.inv[id] -= n; if (G.inv[id] <= 0) delete G.inv[id]; } renderHotbar(); }
+    function hasItem(id, n = 1) { return (G.inv[id] || 0) >= n; }
 
-    loadGame();
-    document.getElementById('nameInput').addEventListener('keypress', e => { if (e.key === 'Enter') startGame(); });
+    function useItem(id) {
+        const it = ITEMS[id];
+        if (!it) return;
+        if (id === 'meat' || id === 'apple') {
+            if (G.hunger < G.maxHunger) {
+                G.hunger = Math.min(G.maxHunger, G.hunger + (id === 'meat' ? 4 : 2));
+                removeItem(id, 1); toast(`吃了${it.n}！`); renderUI();
+            } else toast('你不餓！');
+            return;
+        }
+        if (it.dmg) { G.weapon = id; toast(`裝備${it.n}！攻擊+${it.dmg}`); renderHotbar(); return; }
+        if (it.pow) { G.pick = id; toast(`裝備${it.n}！挖礦+${it.pow}`); renderHotbar(); return; }
+    }
+
+    function openCraft() {
+        const list = document.getElementById('recipeList');
+        list.innerHTML = '';
+        RECIPES.forEach(r => {
+            const can = Object.entries(r.c).every(([i, n]) => hasItem(i, n));
+            const d = document.createElement('div');
+            d.className = 'recipe' + (can ? '' : ' disabled');
+            const cost = Object.entries(r.c).map(([i, n]) => `${ITEMS[i].i}×${n}`).join(' ');
+            d.innerHTML = `<div class="recipe-info"><span class="recipe-icon">${r.i}</span><div><div class="recipe-name">${r.n}</div><div class="recipe-cost">${cost} | ${r.d}</div></div></div>${can ? '<button class="recipe-btn">合成</button>' : ''}`;
+            if (can) d.onclick = () => craft(r);
+            list.appendChild(d);
+        });
+        document.getElementById('craftModal').classList.add('show');
+    }
+    function closeCraft() { document.getElementById('craftModal').classList.remove('show'); }
+    function craft(r) {
+        Object.entries(r.c).forEach(([i, n]) => removeItem(i, n));
+        addItem(r.r, 1); toast(`合成了${r.n}！`); G.score += 20; openCraft(); renderUI();
+    }
+
+    function spawnMob() {
+        if (!G.night || G.mobs.length >= 6) return;
+        if (Math.random() > 0.25) return;
+        const type = MOBS[Math.floor(Math.random() * MOBS.length)];
+        let x, y, tries = 0;
+        do {
+            x = G.px + Math.floor(Math.random() * 12) - 6;
+            y = G.py + Math.floor(Math.random() * 12) - 6;
+            tries++;
+        } while ((x < 0 || x >= SIZE || y < 0 || y >= SIZE || G.world[y][x].t === 'water' || G.world[y][x].obj || (Math.abs(x - G.px) < 3 && Math.abs(y - G.py) < 3)) && tries < 20);
+        if (tries < 20) { G.mobs.push({ ...type, x, y, maxHp: type.hp }); renderMobs(); }
+    }
+
+    function moveMobs() {
+        G.mobs.forEach(m => {
+            if (Math.random() < 0.5) {
+                const dx = Math.sign(G.px - m.x), dy = Math.sign(G.py - m.y);
+                const nx = m.x + (Math.random() < 0.5 ? dx : 0);
+                const ny = m.y + (Math.random() < 0.5 ? dy : 0);
+                if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && G.world[ny][nx].t !== 'water' && !G.world[ny][nx].obj) { m.x = nx; m.y = ny; }
+            }
+        });
+        renderMobs(); checkMobHit();
+    }
+
+    function checkMobHit() { G.mobs.forEach(m => { if (m.x === G.px && m.y === G.py) hurt(m.dmg, `被${m.n}攻擊了`); }); }
+
+    function attackNearest() {
+        if (!G.running) return;
+        let hit = false;
+        G.mobs.forEach((m, i) => { if (Math.abs(m.x - G.px) + Math.abs(m.y - G.py) <= 1) { attackMob(i); hit = true; } });
+        if (!hit) toast('附近沒有怪物！');
+    }
+
+    function attackMob(i) {
+        const m = G.mobs[i]; if (!m) return;
+        if (Math.abs(m.x - G.px) + Math.abs(m.y - G.py) > 2) { toast('太遠了！'); return; }
+        const dmg = G.weapon && ITEMS[G.weapon] ? ITEMS[G.weapon].dmg : 1;
+        m.hp -= dmg; toast(`對${m.n}造成${dmg}傷害！`);
+        if (m.hp <= 0) { if (Math.random() < 0.5) addItem('meat', 1); G.mobs.splice(i, 1); G.score += 30; toast(`擊敗${m.n}！`); }
+        renderMobs(); renderUI();
+    }
+
+    function hurt(n, reason) { G.hp -= n; toast(`受到${n}傷害！`); renderUI(); if (G.hp <= 0) gameOver(reason); }
+    function gameOver(reason) { document.getElementById('deathMsg').textContent = reason; document.getElementById('gameoverScreen').classList.add('show'); G.running = false; }
+    function restart() { document.getElementById('gameoverScreen').classList.remove('show'); init(); }
+
+    function toggleDayNight() {
+        G.night = !G.night;
+        if (!G.night) { G.day++; G.mobs = []; }
+        renderUI(); renderMobs();
+        toast(G.night ? '夜晚來臨，小心怪物！' : `第${G.day}天開始了！`);
+    }
+
+    function toast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') move(0, -1);
+        else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') move(0, 1);
+        else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') move(-1, 0);
+        else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') move(1, 0);
+        else if (e.key === ' ') attackNearest();
+        else if (e.key === 'e' || e.key === 'E') openCraft();
+        else if (e.key === 'Escape') closeCraft();
+    });
+
+    function init() {
+        G = { px: 12, py: 12, hp: 10, maxHp: 10, hunger: 10, maxHunger: 10, inv: { wood: 3 }, weapon: null, pick: null, day: 1, night: false, score: 0, world: [], mobs: [], running: true };
+        genWorld(); render(); renderUI();
+    }
+
+    function startGame() {
+        document.getElementById('startScreen').classList.add('hidden');
+        init();
+        toast('歡迎！先收集木頭製作工具吧！');
+        setInterval(() => { if (G.running) { moveMobs(); spawnMob(); } }, 1800);
+        setInterval(() => { if (G.running) toggleDayNight(); }, 45000);
+    }
+
+    renderUI();
 </script>
 ```
 
