@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小蛹的 Minecraft 冒險世界</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #87CEEB 0%, #87CEEB 50%, #5D8C3E 50%, #5D8C3E 55%, #8B5A2B 55%, #8B5A2B 70%, #555 70%);
+            background-attachment: fixed;
+        }
+        .clouds { position: fixed; top: 0; left: 0; width: 100%; height: 150px; pointer-events: none; z-index: 1; overflow: hidden; }
+        .cloud { position: absolute; background: white; box-shadow: 20px 0 0 white, 40px 0 0 white, 10px -12px 0 white, 30px -12px 0 white; width: 18px; height: 18px; animation: cloudMove linear infinite; }
+        .cloud:nth-child(1) { top: 25px; animation-duration: 40s; }
+        .cloud:nth-child(2) { top: 60px; animation-duration: 50s; animation-delay: -20s; }
+        .cloud:nth-child(3) { top: 45px; animation-duration: 45s; animation-delay: -30s; }
+        @keyframes cloudMove { from { left: -80px; } to { left: 100%; } }
+
+```
+    .container { max-width: 800px; margin: 0 auto; padding: 15px; position: relative; z-index: 2; }
+
+    .header {
+        text-align: center; padding: 20px;
+        background: linear-gradient(180deg, #5D8C3E, #3D6B24);
+        border: 6px solid #2D4A1C;
+        box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+        margin-bottom: 15px;
+    }
+    .header h1 { font-size: 1.5rem; font-weight: 900; color: white; text-shadow: 3px 3px 0 #2D4A1C; }
+    .header .mascot { font-size: 3.5rem; display: block; margin-bottom: 8px; animation: swing 1.5s ease-in-out infinite; }
+    @keyframes swing { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+    .header .subtitle { color: #FCEE4B; font-size: 0.85rem; margin-top: 8px; font-weight: 700; }
+
+    .player-hud {
+        background: rgba(0,0,0,0.8); border: 4px solid #4A4A4A; padding: 15px; margin-bottom: 15px;
+        display: flex; align-items: center; gap: 15px; flex-wrap: wrap;
+    }
+    .player-skin { width: 55px; height: 55px; background: linear-gradient(180deg, #8B5A2B 25%, #00AAFF 25%, #00AAFF 65%, #1E40AF 65%); border: 3px solid #1a1a1a; display: flex; align-items: flex-start; justify-content: center; font-size: 1.2rem; padding-top: 2px; }
+    .player-info { flex: 1; min-width: 130px; }
+    .player-name { font-size: 1rem; font-weight: 900; color: white; margin-bottom: 5px; }
+    .health-bar { display: flex; gap: 2px; margin-bottom: 5px; }
+    .heart { width: 18px; height: 16px; background: #FF0000; clip-path: polygon(50% 100%, 0% 35%, 15% 0%, 50% 20%, 85% 0%, 100% 35%); }
+    .heart.empty { background: #444; }
+    .exp-bar-container { background: #111; border: 2px solid #333; height: 14px; position: relative; }
+    .exp-bar { background: linear-gradient(180deg, #7CFC00, #228B22); height: 100%; transition: width 0.4s; }
+    .exp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #7CFC00; font-size: 0.65rem; font-weight: 900; }
+    .inventory { display: flex; gap: 5px; }
+    .inv-slot { width: 44px; height: 44px; background: #8B8B8B; border: 3px solid; border-color: #555 #CCC #CCC #555; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; position: relative; }
+    .inv-slot .count { position: absolute; bottom: 0; right: 2px; font-size: 0.6rem; font-weight: 900; color: white; text-shadow: 1px 1px #000; }
+
+    .section-title { font-size: 1.1rem; font-weight: 900; color: white; margin-bottom: 12px; text-shadow: 2px 2px 0 #000; }
+    .zones-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+    .zone-card {
+        background: linear-gradient(180deg, #6D6D6D, #4D4D4D);
+        border: 5px solid; border-color: #8F8F8F #3F3F3F #3F3F3F #8F8F8F;
+        padding: 15px; text-align: center; cursor: pointer; transition: transform 0.1s; position: relative;
+    }
+    .zone-card:hover { transform: translateY(-4px); }
+    .zone-card:active { border-color: #3F3F3F #8F8F8F #8F8F8F #3F3F3F; }
+    .zone-card.locked { opacity: 0.5; cursor: not-allowed; }
+    .zone-card.locked:hover { transform: none; }
+    .zone-icon { font-size: 2.5rem; margin-bottom: 6px; display: block; }
+    .zone-name { font-size: 0.8rem; font-weight: 900; color: white; margin-bottom: 3px; }
+    .zone-desc { font-size: 0.65rem; color: #CCC; }
+    .zone-reward { margin-top: 6px; font-size: 0.65rem; color: #FCEE4B; font-weight: 700; }
+    .lock-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem; }
+
+    .game-screen { background: rgba(0,0,0,0.9); border: 5px solid #4A4A4A; padding: 20px; display: none; }
+    .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 3px solid #4A4A4A; flex-wrap: wrap; gap: 8px; }
+    .game-title { font-size: 1rem; font-weight: 900; color: white; }
+    .game-stats { display: flex; gap: 10px; align-items: center; }
+    .stat-badge { background: #333; border: 2px solid #555; padding: 6px 12px; font-size: 0.7rem; font-weight: 900; color: white; }
+    .game-lives { font-size: 1.2rem; letter-spacing: 3px; }
+
+    .mining-area { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; max-width: 350px; margin: 0 auto 15px; }
+    .mine-block {
+        aspect-ratio: 1; background: linear-gradient(145deg, #7F7F7F, #5F5F5F);
+        border: 4px solid; border-color: #9F9F9F #4F4F4F #4F4F4F #9F9F9F;
+        cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; transition: transform 0.1s;
+    }
+    .mine-block:hover { transform: scale(1.06); }
+    .mine-block.revealed { cursor: default; }
+    .mine-block.revealed:hover { transform: none; }
+    .mine-block.diamond-ore { background: linear-gradient(135deg, #4AEDD9, #2DD4BF); animation: shine 1.5s infinite; }
+    .mine-block.gold-ore { background: linear-gradient(135deg, #FCEE4B, #F59E0B); }
+    .mine-block.iron-ore { background: linear-gradient(135deg, #E8E8E8, #B8B8B8); }
+    .mine-block.coal-ore { background: linear-gradient(135deg, #4F4F4F, #2F2F2F); }
+    .mine-block.emerald-ore { background: linear-gradient(135deg, #10B981, #059669); animation: shine 1.5s infinite; }
+    .mine-block.creeper { background: linear-gradient(135deg, #5FCF5F, #3E9E3E); }
+    @keyframes shine { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.3); } }
+
+    .battle-area { text-align: center; padding: 10px; }
+    .monster-display { font-size: 5rem; margin-bottom: 10px; animation: bounce 1s infinite; }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    .monster-name { font-size: 1rem; font-weight: 900; color: #FF6B6B; margin-bottom: 6px; }
+    .monster-hp-bar { background: #111; border: 3px solid #444; height: 20px; max-width: 260px; margin: 0 auto 15px; position: relative; }
+    .monster-hp { background: linear-gradient(180deg, #FF4444, #990000); height: 100%; transition: width 0.3s; }
+    .monster-hp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 0.65rem; font-weight: 900; }
+    .battle-question { background: #222; border: 3px solid #444; padding: 15px; margin-bottom: 15px; font-size: 1.2rem; font-weight: 900; color: white; }
+    .battle-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: 350px; margin: 0 auto; }
+    .battle-btn {
+        background: linear-gradient(180deg, #6D6D6D, #4D4D4D);
+        border: 4px solid; border-color: #8F8F8F #3F3F3F #3F3F3F #8F8F8F;
+        padding: 12px; font-family: inherit; font-size: 0.95rem; font-weight: 900; color: white; cursor: pointer;
+    }
+    .battle-btn:hover { background: linear-gradient(180deg, #7D7D7D, #5D5D5D); }
+    .battle-btn.correct { background: linear-gradient(180deg, #5FCF5F, #2E7E2E); }
+    .battle-btn.wrong { background: linear-gradient(180deg, #FF5555, #992222); }
+
+    .build-area { text-align: center; }
+    .build-target { background: #222; border: 3px solid #444; padding: 15px; margin-bottom: 15px; }
+    .build-target-title { font-size: 0.8rem; color: #AAA; margin-bottom: 10px; }
+    .build-pattern { display: inline-grid; grid-template-columns: repeat(3, 45px); gap: 3px; }
+    .pattern-block { width: 45px; height: 45px; background: #555; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+    .build-grid { display: inline-grid; grid-template-columns: repeat(3, 52px); gap: 4px; margin-bottom: 15px; }
+    .build-slot { width: 52px; height: 52px; background: #8B8B8B; border: 4px solid; border-color: #555 #CCC #CCC #555; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; }
+    .build-slot:hover { transform: scale(1.05); }
+    .build-materials { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+    .material-btn { width: 52px; height: 52px; background: #8B8B8B; border: 4px solid; border-color: #555 #CCC #CCC #555; font-size: 1.5rem; cursor: pointer; }
+    .material-btn.selected { border-color: #FCEE4B; box-shadow: 0 0 10px #FCEE4B; }
+
+    .mc-btn {
+        background: linear-gradient(180deg, #6D6D6D, #4D4D4D);
+        border: 5px solid; border-color: #8F8F8F #3F3F3F #3F3F3F #8F8F8F;
+        padding: 10px 20px; font-family: inherit; font-size: 0.85rem; font-weight: 900; color: white; cursor: pointer; margin: 4px;
+    }
+    .mc-btn:hover { background: linear-gradient(180deg, #7D7D7D, #5D5D5D); }
+    .mc-btn.primary { background: linear-gradient(180deg, #5FCF5F, #2E7E2E); border-color: #7FEF7F #2E7E2E #2E7E2E #7FEF7F; }
+
+    .result-screen { text-align: center; padding: 20px; }
+    .result-icon { font-size: 4.5rem; margin-bottom: 12px; }
+    .result-title { font-size: 1.4rem; font-weight: 900; margin-bottom: 10px; }
+    .result-title.win { color: #7CFC00; }
+    .result-title.lose { color: #FF6B6B; }
+    .result-message { font-size: 0.85rem; color: #CCC; margin-bottom: 15px; }
+    .loot-display { background: #222; border: 3px solid #444; padding: 15px; margin-bottom: 15px; }
+    .loot-title { font-size: 0.85rem; font-weight: 900; color: #FCEE4B; margin-bottom: 10px; }
+    .loot-items { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .loot-item { background: #8B8B8B; border: 3px solid; border-color: #555 #CCC #CCC #555; padding: 8px 12px; text-align: center; }
+    .loot-item-icon { font-size: 1.4rem; }
+    .loot-item-count { font-size: 0.65rem; font-weight: 900; color: white; margin-top: 3px; }
+
+    .achievements-section { background: rgba(0,0,0,0.8); border: 4px solid #4A4A4A; padding: 15px; }
+    .achievements-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .achievement { background: #222; border: 3px solid #444; padding: 10px; text-align: center; opacity: 0.4; }
+    .achievement.unlocked { opacity: 1; border-color: #FCEE4B; }
+    .achievement-icon { font-size: 1.6rem; margin-bottom: 4px; }
+    .achievement-name { font-size: 0.55rem; font-weight: 700; color: white; }
+
+    .start-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+    .start-modal.hidden { display: none; }
+    .start-content { background: linear-gradient(180deg, #6D6D6D, #4D4D4D); border: 6px solid; border-color: #8F8F8F #3F3F3F #3F3F3F #8F8F8F; padding: 30px; text-align: center; max-width: 380px; width: 100%; }
+    .start-logo { font-size: 4rem; margin-bottom: 12px; animation: swing 1.5s infinite; }
+    .start-title { font-size: 1.2rem; font-weight: 900; color: white; margin-bottom: 6px; }
+    .start-subtitle { font-size: 0.75rem; color: #CCC; margin-bottom: 18px; }
+    .name-input { width: 100%; padding: 12px; background: #111; border: 4px solid #444; color: white; font-family: inherit; font-size: 0.95rem; font-weight: 700; text-align: center; margin-bottom: 15px; }
+    .name-input:focus { outline: none; border-color: #FCEE4B; }
+
+    .sound-btn { position: fixed; top: 12px; right: 12px; width: 44px; height: 44px; background: #444; border: 3px solid; border-color: #666 #222 #222 #666; font-size: 1.3rem; cursor: pointer; z-index: 100; display: flex; align-items: center; justify-content: center; }
+
+    @media (max-width: 500px) {
+        .header h1 { font-size: 1.2rem; }
+        .zones-grid { grid-template-columns: 1fr 1fr; }
+        .mining-area { grid-template-columns: repeat(4, 1fr); }
+        .battle-options { grid-template-columns: 1fr; }
+        .achievements-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+```
+
+</head>
+<body>
+    <button class="sound-btn" onclick="toggleSound()">🔊</button>
+    <div class="clouds"><div class="cloud"></div><div class="cloud"></div><div class="cloud"></div></div>
+
+```
+<div class="start-modal" id="startModal">
+    <div class="start-content">
+        <div class="start-logo">⛏️</div>
+        <h1 class="start-title">小蛹的 Minecraft 冒險</h1>
+        <p class="start-subtitle">準備好探索了嗎？</p>
+        <input type="text" class="name-input" id="nameInput" placeholder="輸入名字..." maxlength="10">
+        <button class="mc-btn primary" onclick="startGame()">開始遊戲 ▶</button>
+    </div>
+</div>
+
+<div class="container">
+    <header class="header">
+        <span class="mascot">⛏️</span>
+        <h1>小蛹的 Minecraft 冒險世界</h1>
+        <p class="subtitle">挖礦 ⛏️ 戰鬥 ⚔️ 建造 🏗️</p>
+    </header>
+
+    <div class="player-hud">
+        <div class="player-skin">😊</div>
+        <div class="player-info">
+            <div class="player-name" id="playerName">Steve</div>
+            <div class="health-bar" id="healthBar"></div>
+            <div class="exp-bar-container">
+                <div class="exp-bar" id="expBar" style="width: 0%"></div>
+                <div class="exp-text">Lv.<span id="playerLevel">1</span></div>
+            </div>
+        </div>
+        <div class="inventory">
+            <div class="inv-slot">💎<span class="count" id="diamondCount">0</span></div>
+            <div class="inv-slot">🥇<span class="count" id="goldCount">0</span></div>
+            <div class="inv-slot">🪨<span class="count" id="ironCount">0</span></div>
+            <div class="inv-slot">⬛<span class="count" id="coalCount">0</span></div>
+        </div>
+    </div>
+
+    <div id="mainScreen">
+        <h2 class="section-title">🗺️ 選擇冒險</h2>
+        <div class="zones-grid">
+            <div class="zone-card" onclick="openGame('mining')">
+                <span class="zone-icon">⛏️</span>
+                <div class="zone-name">挖礦探險</div>
+                <div class="zone-desc">挖掘稀有寶石</div>
+                <div class="zone-reward">💎 獲得礦石</div>
+            </div>
+            <div class="zone-card" onclick="openGame('battle')">
+                <span class="zone-icon">⚔️</span>
+                <div class="zone-name">怪物戰鬥</div>
+                <div class="zone-desc">打敗怪物</div>
+                <div class="zone-reward">⭐ 獲得經驗</div>
+            </div>
+            <div class="zone-card" onclick="openGame('build')">
+                <span class="zone-icon">🏗️</span>
+                <div class="zone-name">建造工坊</div>
+                <div class="zone-desc">完成建造挑戰</div>
+                <div class="zone-reward">🏆 獲得成就</div>
+            </div>
+            <div class="zone-card" id="bossZone" onclick="openGame('boss')">
+                <span class="zone-icon">🐉</span>
+                <div class="zone-name">終界龍</div>
+                <div class="zone-desc">最終挑戰</div>
+                <div class="zone-reward">👑 傳說獎勵</div>
+            </div>
+        </div>
+
+        <div class="achievements-section">
+            <h2 class="section-title">🏆 成就</h2>
+            <div class="achievements-grid">
+                <div class="achievement" id="ach-first-diamond"><div class="achievement-icon">💎</div><div class="achievement-name">第一顆鑽石</div></div>
+                <div class="achievement" id="ach-monster-slayer"><div class="achievement-icon">⚔️</div><div class="achievement-name">怪物殺手</div></div>
+                <div class="achievement" id="ach-builder"><div class="achievement-icon">🏗️</div><div class="achievement-name">建築大師</div></div>
+                <div class="achievement" id="ach-rich"><div class="achievement-icon">🥇</div><div class="achievement-name">黃金礦工</div></div>
+                <div class="achievement" id="ach-dragon"><div class="achievement-icon">🐉</div><div class="achievement-name">屠龍勇士</div></div>
+                <div class="achievement" id="ach-master"><div class="achievement-icon">👑</div><div class="achievement-name">傳說玩家</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-screen" id="gameScreen">
+        <div class="game-header">
+            <h2 class="game-title" id="gameTitle">⛏️ 挖礦探險</h2>
+            <div class="game-stats">
+                <div class="stat-badge">分數: <span id="gameScore">0</span></div>
+                <div class="game-lives" id="gameLives">❤️❤️❤️</div>
+            </div>
+        </div>
+        <div id="gameContent"></div>
+        <div style="text-align: center; margin-top: 15px;">
+            <button class="mc-btn" onclick="backToMain()">← 返回</button>
+        </div>
+    </div>
+
+    <div class="game-screen" id="resultScreen" style="display: none;">
+        <div class="result-screen">
+            <div class="result-icon" id="resultIcon">🎉</div>
+            <h2 class="result-title win" id="resultTitle">任務完成！</h2>
+            <p class="result-message" id="resultMessage">太厲害了！</p>
+            <div class="loot-display">
+                <div class="loot-title">🎁 獲得獎勵</div>
+                <div class="loot-items" id="lootItems"></div>
+            </div>
+            <button class="mc-btn primary" onclick="playAgain()">再玩一次 🔄</button>
+            <button class="mc-btn" onclick="backToMain()">返回主畫面</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let audioCtx = null, soundEnabled = true;
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    function toggleSound() { soundEnabled = !soundEnabled; document.querySelector('.sound-btn').textContent = soundEnabled ? '🔊' : '🔇'; }
+    function playSound(type) {
+        if (!soundEnabled) return;
+        initAudio();
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        const t = audioCtx.currentTime;
+        if (type === 'mine') { o.frequency.setValueAtTime(150, t); g.gain.setValueAtTime(0.2, t); g.gain.linearRampToValueAtTime(0, t+0.1); o.type = 'square'; o.start(t); o.stop(t+0.1); }
+        else if (type === 'diamond') { [523,659,784,1047].forEach((f,i) => { const os = audioCtx.createOscillator(), gs = audioCtx.createGain(); os.connect(gs); gs.connect(audioCtx.destination); os.frequency.setValueAtTime(f, t+i*0.07); gs.gain.setValueAtTime(0.15, t+i*0.07); gs.gain.linearRampToValueAtTime(0, t+i*0.07+0.1); os.start(t+i*0.07); os.stop(t+i*0.07+0.1); }); }
+        else if (type === 'hurt') { o.frequency.setValueAtTime(200, t); o.frequency.linearRampToValueAtTime(80, t+0.2); g.gain.setValueAtTime(0.25, t); g.gain.linearRampToValueAtTime(0, t+0.2); o.type = 'sawtooth'; o.start(t); o.stop(t+0.2); }
+        else if (type === 'win') { [523,587,659,784,880,1047].forEach((f,i) => { const os = audioCtx.createOscillator(), gs = audioCtx.createGain(); os.connect(gs); gs.connect(audioCtx.destination); os.frequency.setValueAtTime(f, t+i*0.08); gs.gain.setValueAtTime(0.15, t+i*0.08); gs.gain.linearRampToValueAtTime(0, t+i*0.08+0.12); os.start(t+i*0.08); os.stop(t+i*0.08+0.12); }); }
+        else if (type === 'click') { o.frequency.setValueAtTime(600, t); g.gain.setValueAtTime(0.1, t); g.gain.linearRampToValueAtTime(0, t+0.05); o.type = 'square'; o.start(t); o.stop(t+0.05); }
+        else if (type === 'explosion') { o.frequency.setValueAtTime(80, t); o.frequency.linearRampToValueAtTime(30, t+0.25); g.gain.setValueAtTime(0.3, t); g.gain.linearRampToValueAtTime(0, t+0.25); o.type = 'sawtooth'; o.start(t); o.stop(t+0.25); }
+    }
+
+    let gameState = { playerName: '', level: 1, exp: 0, diamonds: 0, gold: 0, iron: 0, coal: 0, achievements: [], currentGame: null, gameScore: 0, gameLives: 3, monstersKilled: 0, buildsCompleted: 0 };
+
+    const monsters = [
+        { name: '殭屍', emoji: '🧟', hp: 30 },
+        { name: '骷髏', emoji: '💀', hp: 25 },
+        { name: '蜘蛛', emoji: '🕷️', hp: 20 },
+        { name: '苦力怕', emoji: '💚', hp: 35 },
+        { name: '乾坤巨靈', emoji: '👻', hp: 40 }
+    ];
+
+    const mathQuestions = [
+        { q: '24 × 6 = ?', a: '144', opts: ['124', '134', '144', '154'] },
+        { q: '156 ÷ 12 = ?', a: '13', opts: ['11', '12', '13', '14'] },
+        { q: '678 + 456 = ?', a: '1134', opts: ['1124', '1134', '1144', '1234'] },
+        { q: '1000 - 387 = ?', a: '613', opts: ['603', '613', '623', '713'] },
+        { q: '18 × 7 = ?', a: '126', opts: ['116', '121', '126', '136'] },
+        { q: '108 ÷ 9 = ?', a: '12', opts: ['10', '11', '12', '13'] },
+        { q: '845 - 379 = ?', a: '466', opts: ['456', '466', '476', '566'] },
+        { q: '32 × 5 = ?', a: '160', opts: ['150', '155', '160', '165'] },
+        { q: '225 ÷ 5 = ?', a: '45', opts: ['40', '44', '45', '50'] },
+        { q: '777 + 333 = ?', a: '1110', opts: ['1010', '1100', '1110', '1111'] },
+        { q: '45 × 8 = ?', a: '360', opts: ['340', '350', '360', '380'] },
+        { q: '196 ÷ 14 = ?', a: '14', opts: ['12', '13', '14', '16'] }
+    ];
+
+    const buildRecipes = [
+        { name: '工作台', pattern: ['🪵','🪵','⬜','🪵','🪵','⬜','⬜','⬜','⬜'], materials: ['🪵'] },
+        { name: '木劍', pattern: ['⬜','🪵','⬜','⬜','🪵','⬜','⬜','🪨','⬜'], materials: ['🪵','🪨'] },
+        { name: '火把', pattern: ['⬜','⬛','⬜','⬜','🪨','⬜','⬜','⬜','⬜'], materials: ['⬛','🪨'] }
+    ];
+
+    function loadGame() {
+        const saved = localStorage.getItem('xiaoyongMinecraft');
+        if (saved) { gameState = JSON.parse(saved); document.getElementById('startModal').classList.add('hidden'); updateUI(); }
+        renderHearts();
+    }
+
+    function saveGame() { localStorage.setItem('xiaoyongMinecraft', JSON.stringify(gameState)); }
+
+    function startGame() {
+        const name = document.getElementById('nameInput').value.trim();
+        if (name) { gameState.playerName = name; document.getElementById('startModal').classList.add('hidden'); playSound('win'); updateUI(); saveGame(); }
+        else { alert('請輸入名字！'); }
+    }
+
+    function renderHearts() {
+        const hb = document.getElementById('healthBar');
+        hb.innerHTML = '';
+        for (let i = 0; i < 5; i++) { const h = document.createElement('div'); h.className = 'heart'; hb.appendChild(h); }
+    }
+
+    function updateUI() {
+        document.getElementById('playerName').textContent = gameState.playerName || 'Steve';
+        document.getElementById('playerLevel').textContent = gameState.level;
+        document.getElementById('expBar').style.width = (gameState.exp % 100) + '%';
+        document.getElementById('diamondCount').textContent = gameState.diamonds;
+        document.getElementById('goldCount').textContent = gameState.gold;
+        document.getElementById('ironCount').textContent = gameState.iron;
+        document.getElementById('coalCount').textContent = gameState.coal;
+        gameState.achievements.forEach(a => { const el = document.getElementById('ach-' + a); if (el) el.classList.add('unlocked'); });
+        const bz = document.getElementById('bossZone');
+        if (gameState.level >= 5) { bz.classList.remove('locked'); const li = bz.querySelector('.lock-icon'); if (li) li.remove(); }
+        else { if (!bz.classList.contains('locked')) { bz.classList.add('locked'); if (!bz.querySelector('.lock-icon')) bz.innerHTML += '<div class="lock-icon">🔒</div>'; } }
+    }
+
+    function unlockAchievement(id) { if (!gameState.achievements.includes(id)) { gameState.achievements.push(id); playSound('win'); saveGame(); updateUI(); } }
+    function addExp(amt) { gameState.exp += amt; const nl = Math.floor(gameState.exp / 100) + 1; if (nl > gameState.level) { gameState.level = nl; playSound('win'); } saveGame(); updateUI(); }
+
+    function openGame(type) {
+        if (type === 'boss' && gameState.level < 5) { playSound('hurt'); alert('需要 Lv.5 才能挑戰！\n目前：Lv.' + gameState.level); return; }
+        playSound('click');
+        gameState.currentGame = type; gameState.gameScore = 0; gameState.gameLives = 3;
+        document.getElementById('mainScreen').style.display = 'none';
+        document.getElementById('gameScreen').style.display = 'block';
+        document.getElementById('resultScreen').style.display = 'none';
+        const titles = { mining: '⛏️ 挖礦探險', battle: '⚔️ 怪物戰鬥', build: '🏗️ 建造工坊', boss: '🐉 終界龍' };
+        document.getElementById('gameTitle').textContent = titles[type];
+        updateGameLives();
+        if (type === 'mining') initMining();
+        else if (type === 'battle') initBattle();
+        else if (type === 'build') initBuild();
+        else if (type === 'boss') initBoss();
+    }
+
+    function updateGameLives() { document.getElementById('gameLives').textContent = '❤️'.repeat(gameState.gameLives) + '🖤'.repeat(3 - gameState.gameLives); }
+
+    // === 挖礦 ===
+    let miningGrid = [], miningRevealed = 0;
+    function initMining() {
+        miningRevealed = 0;
+        const ores = ['diamond', 'emerald', 'gold', 'gold', 'iron', 'iron', 'iron', 'coal', 'coal', 'coal', 'stone', 'stone', 'stone', 'stone', 'stone', 'creeper', 'creeper', 'stone', 'stone', 'stone'];
+        for (let i = ores.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ores[i], ores[j]] = [ores[j], ores[i]]; }
+        miningGrid = ores;
+        document.getElementById('gameContent').innerHTML = `
+            <p style="text-align:center;color:#CCC;font-size:0.75rem;margin-bottom:10px;">點擊方塊挖掘！找寶石💎 小心苦力怕💥</p>
+            <div class="mining-area">${ores.map((_, i) => `<div class="mine-block" onclick="mineBlock(${i})">❓</div>`).join('')}</div>
+            <p style="text-align:center;color:white;font-size:0.75rem;">已挖: <span id="minedCount">0</span>/20</p>
+        `;
+    }
+
+    function mineBlock(i) {
+        const blocks = document.querySelectorAll('.mine-block'), b = blocks[i];
+        if (b.classList.contains('revealed')) return;
+        playSound('mine'); b.classList.add('revealed'); miningRevealed++;
+        document.getElementById('minedCount').textContent = miningRevealed;
+        const ore = miningGrid[i];
+        if (ore === 'diamond') { b.classList.add('diamond-ore'); b.textContent = '💎'; gameState.diamonds++; gameState.gameScore += 50; playSound('diamond'); unlockAchievement('first-diamond'); }
+        else if (ore === 'emerald') { b.classList.add('emerald-ore'); b.textContent = '💚'; gameState.gameScore += 40; playSound('diamond'); }
+        else if (ore === 'gold') { b.classList.add('gold-ore'); b.textContent = '🥇'; gameState.gold++; gameState.gameScore += 30; if (gameState.gold >= 10) unlockAchievement('rich'); }
+        else if (ore === 'iron') { b.classList.add('iron-ore'); b.textContent = '🪨'; gameState.iron++; gameState.gameScore += 20; }
+        else if (ore === 'coal') { b.classList.add('coal-ore'); b.textContent = '⬛'; gameState.coal++; gameState.gameScore += 10; }
+        else if (ore === 'creeper') { b.classList.add('creeper'); b.textContent = '💥'; gameState.gameLives--; playSound('explosion'); updateGameLives(); if (gameState.gameLives <= 0) { setTimeout(() => showResult(false), 400); return; } }
+        else { b.textContent = 'ite石'; gameState.gameScore += 5; }
+        document.getElementById('gameScore').textContent = gameState.gameScore;
+        saveGame(); updateUI();
+        if (miningRevealed >= 20) setTimeout(() => showResult(true), 400);
+    }
+
+    // === 戰鬥 ===
+    let currentMonster, monsterHp, monsterMaxHp, battleRound = 0;
+    function initBattle() { battleRound = 0; nextMonster(); }
+    function nextMonster() {
+        if (battleRound >= 5) { unlockAchievement('monster-slayer'); showResult(true); return; }
+        currentMonster = monsters[Math.floor(Math.random() * monsters.length)];
+        monsterMaxHp = currentMonster.hp; monsterHp = monsterMaxHp; battleRound++;
+        showBattleQ();
+    }
+    function showBattleQ() {
+        const q = mathQuestions[Math.floor(Math.random() * mathQuestions.length)];
+        const opts = [...q.opts].sort(() => Math.random() - 0.5);
+        document.getElementById('gameContent').innerHTML = `
+            <div class="battle-area">
+                <div class="monster-display">${currentMonster.emoji}</div>
+                <div class="monster-name">${currentMonster.name}</div>
+                <div class="monster-hp-bar"><div class="monster-hp" style="width:${(monsterHp/monsterMaxHp)*100}%"></div><div class="monster-hp-text">${monsterHp}/${monsterMaxHp}</div></div>
+                <div class="battle-question">${q.q}</div>
+                <div class="battle-options">${opts.map(o => `<button class="battle-btn" onclick="battleAns('${o}','${q.a}')">${o}</button>`).join('')}</div>
+            </div>
+        `;
+    }
+    function battleAns(sel, cor) {
+        const btns = document.querySelectorAll('.battle-btn');
+        btns.forEach(b => { b.disabled = true; if (b.textContent === cor) b.classList.add('correct'); if (b.textContent === sel && sel !== cor) b.classList.add('wrong'); });
+        if (sel === cor) {
+            playSound('mine'); monsterHp -= 15; gameState.gameScore += 20;
+            document.getElementById('gameScore').textContent = gameState.gameScore;
+            if (monsterHp <= 0) { gameState.monstersKilled++; addExp(25); setTimeout(nextMonster, 600); }
+            else setTimeout(showBattleQ, 600);
+        } else {
+            playSound('hurt'); gameState.gameLives--; updateGameLives();
+            if (gameState.gameLives <= 0) setTimeout(() => showResult(false), 600);
+            else setTimeout(showBattleQ, 600);
+        }
+    }
+
+    // === 建造 ===
+    let currentRecipe, buildGrid, selectedMat, buildRound = 0;
+    function initBuild() { buildRound = 0; nextBuild(); }
+    function nextBuild() {
+        if (buildRound >= 3) { gameState.buildsCompleted++; if (gameState.buildsCompleted >= 3) unlockAchievement('builder'); showResult(true); return; }
+        currentRecipe = buildRecipes[buildRound];
+        buildGrid = Array(9).fill('⬜'); selectedMat = null; buildRound++;
+        showBuildUI();
+    }
+    function showBuildUI() {
+        document.getElementById('gameContent').innerHTML = `
+            <div class="build-area">
+                <div class="build-target">
+                    <div class="build-target-title">建造：${currentRecipe.name}</div>
+                    <div class="build-pattern">${currentRecipe.pattern.map(p => `<div class="pattern-block">${p}</div>`).join('')}</div>
+                </div>
+                <p style="color:#AAA;font-size:0.7rem;margin-bottom:10px;">選材料，點格子放置</p>
+                <div class="build-grid">${buildGrid.map((b, i) => `<div class="build-slot ${b !== '⬜' ? 'filled' : ''}" onclick="placeMat(${i})">${b}</div>`).join('')}</div>
+                <div class="build-materials">${currentRecipe.materials.map(m => `<button class="material-btn ${selectedMat === m ? 'selected' : ''}" onclick="selectMat('${m}')">${m}</button>`).join('')}<button class="material-btn" onclick="selectMat('⬜')">🗑️</button></div>
+                <button class="mc-btn primary" style="margin-top:12px;" onclick="checkBuild()">完成 ✓</button>
+            </div>
+        `;
+    }
+    function selectMat(m) { selectedMat = m; playSound('click'); showBuildUI(); }
+    function placeMat(i) { if (!selectedMat) return; playSound('mine'); buildGrid[i] = selectedMat; showBuildUI(); }
+    function checkBuild() {
+        if (buildGrid.every((b, i) => b === currentRecipe.pattern[i])) {
+            playSound('diamond'); gameState.gameScore += 50; addExp(30);
+            document.getElementById('gameScore').textContent = gameState.gameScore;
+            setTimeout(nextBuild, 500);
+        } else { playSound('hurt'); gameState.gameLives--; updateGameLives(); if (gameState.gameLives <= 0) setTimeout(() => showResult(false), 400); else alert('建造錯誤！再試一次'); }
+    }
+
+    // === Boss ===
+    let bossHp = 100;
+    function initBoss() { bossHp = 100; showBossQ(); }
+    function showBossQ() {
+        const q = mathQuestions[Math.floor(Math.random() * mathQuestions.length)];
+        const opts = [...q.opts].sort(() => Math.random() - 0.5);
+        document.getElementById('gameContent').innerHTML = `
+            <div class="battle-area">
+                <div class="monster-display" style="font-size:6rem;">🐉</div>
+                <div class="monster-name" style="color:#9B59B6;">終界龍</div>
+                <div class="monster-hp-bar" style="max-width:300px;"><div class="monster-hp" style="width:${bossHp}%;background:linear-gradient(180deg,#9B59B6,#6C3483);"></div><div class="monster-hp-text">${bossHp}/100</div></div>
+                <div class="battle-question">${q.q}</div>
+                <div class="battle-options">${opts.map(o => `<button class="battle-btn" onclick="bossAns('${o}','${q.a}')">${o}</button>`).join('')}</div>
+            </div>
+        `;
+    }
+    function bossAns(sel, cor) {
+        const btns = document.querySelectorAll('.battle-btn');
+        btns.forEach(b => { b.disabled = true; if (b.textContent === cor) b.classList.add('correct'); if (b.textContent === sel && sel !== cor) b.classList.add('wrong'); });
+        if (sel === cor) {
+            playSound('mine'); bossHp -= 20; gameState.gameScore += 40;
+            document.getElementById('gameScore').textContent = gameState.gameScore;
+            if (bossHp <= 0) { unlockAchievement('dragon'); if (gameState.achievements.length >= 5) unlockAchievement('master'); addExp(150); setTimeout(() => showResult(true, true), 600); }
+            else setTimeout(showBossQ, 600);
+        } else { playSound('hurt'); gameState.gameLives--; updateGameLives(); if (gameState.gameLives <= 0) setTimeout(() => showResult(false), 600); else setTimeout(showBossQ, 600); }
+    }
+
+    // === 結果 ===
+    function showResult(won, isBoss = false) {
+        document.getElementById('gameScreen').style.display = 'none';
+        document.getElementById('resultScreen').style.display = 'block';
+        document.getElementById('resultIcon').textContent = won ? (isBoss ? '🐉' : '🎉') : '💀';
+        document.getElementById('resultTitle').textContent = won ? (isBoss ? '屠龍成功！' : '任務完成！') : '任務失敗...';
+        document.getElementById('resultTitle').className = 'result-title ' + (won ? 'win' : 'lose');
+        document.getElementById('resultMessage').textContent = won ? (isBoss ? '你打敗了終界龍！' : '太厲害了！') : '再挑戰一次！';
+        let loot = '';
+        if (won) { playSound('win'); loot = `<div class="loot-item"><span class="loot-item-icon">⭐</span><div class="loot-item-count">+${gameState.gameScore}分</div></div><div class="loot-item"><span class="loot-item-icon">📈</span><div class="loot-item-count">經驗UP</div></div>`; if (isBoss) loot += `<div class="loot-item"><span class="loot-item-icon">🥚</span><div class="loot-item-count">龍蛋</div></div>`; }
+        else { playSound('hurt'); loot = `<div class="loot-item"><span class="loot-item-icon">😢</span><div class="loot-item-count">再接再厲</div></div>`; }
+        document.getElementById('lootItems').innerHTML = loot;
+        saveGame(); updateUI();
+    }
+
+    function playAgain() { playSound('click'); openGame(gameState.currentGame); }
+    function backToMain() { playSound('click'); document.getElementById('mainScreen').style.display = 'block'; document.getElementById('gameScreen').style.display = 'none'; document.getElementById('resultScreen').style.display = 'none'; updateUI(); }
+
+    loadGame();
+    document.getElementById('nameInput').addEventListener('keypress', e => { if (e.key === 'Enter') startGame(); });
+</script>
+```
+
+</body>
+</html>
