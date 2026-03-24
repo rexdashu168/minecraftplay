@@ -284,6 +284,11 @@ cursor:pointer;color:#fff;margin-top:6px;transition:all 0.2s}
 /* ── 複習橫幅 ── */
 .review-banner{background:rgba(239,68,68,0.12);border-bottom:1px solid rgba(239,68,68,0.25);padding:10px 14px;text-align:center;font-size:13px;color:#fca5a5;font-weight:700}
 
+/* Phonics */
+.ph-word{display:inline-flex;flex-wrap:wrap;gap:1px;justify-content:center}
+.ph-seg{cursor:pointer;transition:all .15s;padding:1px 0;border-radius:3px}
+.ph-seg:active{transform:scale(.9)}
+
 /* particle */
 .ptc{position:fixed;pointer-events:none;font-size:22px;z-index:999;animation:ptcFly 0.9s ease-out forwards}
 @keyframes ptcFly{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-70px) scale(0.2);opacity:0}}
@@ -455,6 +460,8 @@ cursor:pointer;color:#fff;margin-top:6px;transition:all 0.2s}
     <div class="m-title ok" id="mTtl">答對了！</div>
     <div class="m-word">
       <div class="m-en" id="mEn">house</div>
+      <div id="mPhonics" style="margin:6px 0;display:flex;justify-content:center;gap:0;flex-wrap:wrap"></div>
+      <div id="mPhLegend" style="font-size:10px;color:rgba(255,255,255,.4);margin:4px 0"></div>
       <div class="m-zh" id="mZh">房子</div>
       <div class="m-sent" id="mSent">This is my house.</div>
     </div>
@@ -1016,7 +1023,7 @@ function nextQ(){
   document.getElementById('hintBox').style.display='none';
   document.getElementById('hintBox').textContent='';
 
-  var qType = sess.idx % 4;
+  var qType = sess.idx % 5;
   // 取干擾選項池
   var pool=[];
   for(var w=0;w<WORLDS.length;w++){
@@ -1051,13 +1058,22 @@ function nextQ(){
     qText.textContent='請拼出「'+curWord.zh+'」的英文';
     qHint.textContent='共 '+curWord.en.length+' 個字母';
     renderSpell();
-  } else {
+  } else if(qType===3) {
     badge.className='q-badge rd'; badge.textContent='📖 句子填空';
     qImg.style.display='none';
     var blank=curWord.s.replace(new RegExp('\\b'+curWord.en+'\\b','gi'),'_____');
     qText.textContent=blank;
     qHint.textContent='提示：'+curWord.zh;
     renderOpts(pool,'en');
+    document.getElementById('hintBtn').style.display='block';
+  } else {
+    // qType===4: Phonics 看色選字
+    badge.className='q-badge rd'; badge.textContent='🎨 Phonics 拼音';
+    qImg.style.display='none';
+    qText.innerHTML='這個單字是什麼意思？<br><div style="margin:10px 0;font-size:26px;letter-spacing:2px;text-align:center">'+getPhHtml(curWord.en)+'</div><div style="font-size:11px;color:rgba(255,255,255,.4);text-align:center">'+getPhLegend(curWord.en)+'</div>';
+    qHint.textContent='顏色代表不同的發音規則，點字母可以聽發音！';
+    renderOpts(pool,'zh');
+    document.getElementById('hintBtn').style.display='block';
   }
 }
 
@@ -1217,6 +1233,11 @@ function onAns(ok, btn){
 // =============================================
 function showResult(ok){
   document.getElementById('mEn').textContent=curWord.img+' '+curWord.en;
+  // Phonics 高亮
+  var phEl=document.getElementById('mPhonics');
+  var phLg=document.getElementById('mPhLegend');
+  if(phEl){ phEl.innerHTML=getPhHtml(curWord.en); }
+  if(phLg){ phLg.textContent=getPhLegend(curWord.en); }
   document.getElementById('mZh').textContent=curWord.zh;
   document.getElementById('mSent').textContent=curWord.s;
 
@@ -1320,12 +1341,16 @@ function renderWordbook(){
     tile.innerHTML=(w.mastered?'<div class="w-ms-badge">⭐熟練</div>':'')+
       '<div class="w-emoji">'+w.img+'</div>'+
       '<div class="w-en">'+w.en+'</div>'+
+      '<div class="wph-seg" style="font-size:13px;margin:2px 0;min-height:18px"></div>'+
       '<div class="w-zh">'+w.zh+'</div>'+
       '<button class="w-play" type="button">🔊</button>';
     var playBtn=tile.querySelector('.w-play');
     (function(word){
       playBtn.onclick=function(e){ e.stopPropagation(); speak(word.en); };
       tile.onclick=function(){ speak(word.en); };
+      // Phonics 高亮
+      var phDiv=tile.querySelector('.wph-seg');
+      if(phDiv){ phDiv.innerHTML=getPhHtml(word.en); }
     })(w);
     grid.appendChild(tile);
   }
@@ -1363,6 +1388,42 @@ function renderStats(){
     d.innerHTML='<div class="ach-ic">'+a.ic+'</div><div class="ach-nm">'+a.nm+'</div>';
     ag.appendChild(d);
   }
+}
+
+
+// =============================================
+// Phonics 輔助函數
+// =============================================
+var PH_MAP = {"family": [["f", "c2"], ["am", "c1"], ["i", "c1"], ["ly", "c2"]], "father": [["f", "c2"], ["a", "c1"], ["th", "c4"], ["er", "c2"]], "mother": [["m", "c2"], ["o", "c1"], ["th", "c4"], ["er", "c2"]], "brother": [["br", "c4"], ["o", "c1"], ["th", "c4"], ["er", "c2"]], "sister": [["s", "c2"], ["i", "c1"], ["st", "c4"], ["er", "c2"]], "grandpa": [["gr", "c4"], ["and", "c2"], ["pa", "c2"]], "grandma": [["gr", "c4"], ["and", "c2"], ["ma", "c2"]], "uncle": [["u", "c1"], ["n", "c2"], ["cle", "c2"]], "aunt": [["au", "c3"], ["nt", "c2"]], "baby": [["b", "c2"], ["a", "c3"], ["by", "c2"]], "house": [["h", "c2"], ["ou", "c3"], ["se", "c5"]], "room": [["r", "c2"], ["oo", "c3"], ["m", "c2"]], "bed": [["b", "c2"], ["e", "c1"], ["d", "c2"]], "door": [["d", "c2"], ["oo", "c3"], ["r", "c2"]], "window": [["w", "c2"], ["in", "c1"], ["dow", "c3"]], "table": [["t", "c2"], ["a", "c3"], ["ble", "c2"]], "chair": [["ch", "c4"], ["air", "c3"]], "lamp": [["l", "c2"], ["a", "c1"], ["mp", "c2"]], "clock": [["cl", "c4"], ["o", "c1"], ["ck", "c2"]], "mirror": [["m", "c2"], ["irr", "c3"], ["or", "c2"]], "sofa": [["s", "c2"], ["o", "c3"], ["fa", "c2"]], "kitchen": [["k", "c2"], ["i", "c1"], ["tch", "c4"], ["en", "c2"]], "bathroom": [["b", "c2"], ["ath", "c4"], ["r", "c2"], ["oom", "c3"]], "floor": [["fl", "c4"], ["oor", "c3"]], "wall": [["w", "c2"], ["a", "c1"], ["ll", "c2"]], "stairs": [["st", "c4"], ["air", "c3"], ["s", "c2"]], "key": [["k", "c2"], ["ey", "c3"]], "TV": [["T", "c2"], ["V", "c2"]], "garden": [["g", "c2"], ["ar", "c3"], ["den", "c2"]], "roof": [["r", "c2"], ["oo", "c3"], ["f", "c2"]], "apple": [["a", "c1"], ["pp", "c2"], ["le", "c5"]], "banana": [["b", "c2"], ["a", "c1"], ["nan", "c2"], ["a", "c1"]], "orange": [["o", "c1"], ["r", "c2"], ["ange", "c4"]], "grape": [["gr", "c4"], ["a", "c3"], ["pe", "c5"]], "strawberry": [["str", "c4"], ["aw", "c3"], ["ber", "c2"], ["ry", "c2"]], "watermelon": [["w", "c2"], ["a", "c1"], ["ter", "c2"], ["mel", "c1"], ["on", "c2"]], "lemon": [["l", "c2"], ["e", "c1"], ["mon", "c2"]], "cherry": [["ch", "c4"], ["err", "c1"], ["y", "c2"]], "mango": [["m", "c2"], ["an", "c1"], ["go", "c3"]], "peach": [["p", "c2"], ["ea", "c3"], ["ch", "c4"]], "rice": [["r", "c2"], ["i", "c3"], ["ce", "c5"]], "bread": [["br", "c4"], ["ea", "c3"], ["d", "c2"]], "egg": [["e", "c1"], ["gg", "c2"]], "fish": [["f", "c2"], ["i", "c1"], ["sh", "c4"]], "chicken": [["ch", "c4"], ["i", "c1"], ["ck", "c2"], ["en", "c2"]], "noodle": [["n", "c2"], ["oo", "c3"], ["dle", "c2"]], "soup": [["s", "c2"], ["ou", "c3"], ["p", "c2"]], "salad": [["s", "c2"], ["al", "c1"], ["ad", "c1"]], "pizza": [["p", "c2"], ["iz", "c1"], ["za", "c2"]], "cake": [["c", "c2"], ["a", "c3"], ["ke", "c5"]], "water": [["w", "c2"], ["a", "c1"], ["ter", "c2"]], "milk": [["m", "c2"], ["i", "c1"], ["lk", "c2"]], "juice": [["j", "c2"], ["ui", "c3"], ["ce", "c5"]], "tea": [["t", "c2"], ["ea", "c3"]], "coffee": [["c", "c2"], ["off", "c1"], ["ee", "c3"]], "sweet": [["sw", "c4"], ["ee", "c3"], ["t", "c2"]], "sour": [["s", "c2"], ["our", "c3"]], "hot": [["h", "c2"], ["o", "c1"], ["t", "c2"]], "cold": [["c", "c2"], ["o", "c3"], ["ld", "c2"]], "yummy": [["y", "c2"], ["umm", "c1"], ["y", "c2"]], "dog": [["d", "c2"], ["o", "c1"], ["g", "c2"]], "cat": [["c", "c2"], ["a", "c1"], ["t", "c2"]], "pig": [["p", "c2"], ["i", "c1"], ["g", "c2"]], "cow": [["c", "c2"], ["ow", "c3"]], "sheep": [["sh", "c4"], ["ee", "c3"], ["p", "c2"]], "horse": [["h", "c2"], ["or", "c3"], ["se", "c5"]], "duck": [["d", "c2"], ["u", "c1"], ["ck", "c2"]], "rabbit": [["r", "c2"], ["abb", "c1"], ["it", "c2"]], "goat": [["g", "c2"], ["oa", "c3"], ["t", "c2"]], "lion": [["l", "c2"], ["i", "c3"], ["on", "c2"]], "tiger": [["t", "c2"], ["i", "c3"], ["ger", "c2"]], "elephant": [["el", "c1"], ["e", "c1"], ["phant", "c4"]], "monkey": [["m", "c2"], ["on", "c1"], ["key", "c3"]], "bear": [["b", "c2"], ["ear", "c3"]], "panda": [["p", "c2"], ["an", "c1"], ["da", "c2"]], "giraffe": [["g", "c2"], ["ir", "c3"], ["affe", "c2"]], "snake": [["sn", "c4"], ["a", "c3"], ["ke", "c5"]], "fox": [["f", "c2"], ["o", "c1"], ["x", "c2"]], "zebra": [["z", "c2"], ["e", "c1"], ["br", "c4"], ["a", "c2"]], "whale": [["wh", "c4"], ["a", "c3"], ["le", "c5"]], "dolphin": [["d", "c2"], ["ol", "c3"], ["ph", "c4"], ["in", "c2"]], "shark": [["sh", "c4"], ["ar", "c3"], ["k", "c2"]], "octopus": [["oc", "c1"], ["to", "c2"], ["pus", "c2"]], "crab": [["cr", "c4"], ["a", "c1"], ["b", "c2"]], "turtle": [["t", "c2"], ["ur", "c3"], ["tle", "c2"]], "seal": [["s", "c2"], ["ea", "c3"], ["l", "c2"]], "lobster": [["l", "c2"], ["ob", "c1"], ["st", "c4"], ["er", "c2"]], "jellyfish": [["j", "c2"], ["ell", "c1"], ["y", "c2"], ["fish", "c4"]], "school": [["sch", "c4"], ["oo", "c3"], ["l", "c2"]], "teacher": [["t", "c2"], ["ea", "c3"], ["ch", "c4"], ["er", "c2"]], "student": [["st", "c4"], ["u", "c1"], ["dent", "c2"]], "classroom": [["cl", "c4"], ["ass", "c1"], ["room", "c3"]], "homework": [["h", "c2"], ["ome", "c3"], ["w", "c2"], ["ork", "c3"]], "test": [["t", "c2"], ["e", "c1"], ["st", "c4"]], "friend": [["fr", "c4"], ["ie", "c3"], ["nd", "c2"]], "playground": [["pl", "c4"], ["ay", "c3"], ["gr", "c4"], ["ound", "c3"]], "library": [["l", "c2"], ["ibr", "c1"], ["ar", "c3"], ["y", "c2"]], "desk": [["d", "c2"], ["e", "c1"], ["sk", "c4"]], "book": [["b", "c2"], ["oo", "c3"], ["k", "c2"]], "pencil": [["p", "c2"], ["en", "c1"], ["cil", "c2"]], "pen": [["p", "c2"], ["e", "c1"], ["n", "c2"]], "eraser": [["e", "c1"], ["r", "c2"], ["as", "c1"], ["er", "c2"]], "ruler": [["r", "c2"], ["ul", "c3"], ["er", "c2"]], "scissors": [["sc", "c4"], ["iss", "c1"], ["ors", "c3"]], "paper": [["p", "c2"], ["a", "c3"], ["per", "c2"]], "bag": [["b", "c2"], ["a", "c1"], ["g", "c2"]], "crayon": [["cr", "c4"], ["ay", "c3"], ["on", "c2"]], "glue": [["gl", "c4"], ["ue", "c3"]], "English": [["Eng", "c2"], ["l", "c2"], ["ish", "c4"]], "math": [["m", "c2"], ["a", "c1"], ["th", "c4"]], "science": [["sc", "c4"], ["i", "c3"], ["ence", "c2"]], "music": [["m", "c2"], ["u", "c3"], ["sic", "c2"]], "art": [["ar", "c3"], ["t", "c2"]], "red": [["r", "c2"], ["e", "c1"], ["d", "c2"]], "blue": [["bl", "c4"], ["ue", "c3"]], "yellow": [["y", "c2"], ["ell", "c1"], ["ow", "c3"]], "green": [["gr", "c4"], ["ee", "c3"], ["n", "c2"]], "purple": [["p", "c2"], ["ur", "c3"], ["ple", "c2"]], "pink": [["p", "c2"], ["i", "c1"], ["nk", "c2"]], "black": [["bl", "c4"], ["a", "c1"], ["ck", "c2"]], "white": [["wh", "c4"], ["i", "c3"], ["te", "c5"]], "brown": [["br", "c4"], ["own", "c3"]], "big": [["b", "c2"], ["i", "c1"], ["g", "c2"]], "small": [["sm", "c4"], ["a", "c1"], ["ll", "c2"]], "tall": [["t", "c2"], ["a", "c1"], ["ll", "c2"]], "fast": [["f", "c2"], ["a", "c1"], ["st", "c4"]], "slow": [["sl", "c4"], ["ow", "c3"]], "heavy": [["h", "c2"], ["ea", "c3"], ["vy", "c2"]], "light": [["l", "c2"], ["igh", "c3"], ["t", "c2"]], "circle": [["c", "c2"], ["ir", "c3"], ["cle", "c2"]], "square": [["squ", "c4"], ["are", "c3"]], "triangle": [["tr", "c4"], ["i", "c1"], ["ang", "c1"], ["le", "c2"]], "happy": [["h", "c2"], ["app", "c1"], ["y", "c2"]], "sad": [["s", "c2"], ["a", "c1"], ["d", "c2"]], "good": [["g", "c2"], ["oo", "c3"], ["d", "c2"]], "bad": [["b", "c2"], ["a", "c1"], ["d", "c2"]], "new": [["n", "c2"], ["ew", "c3"]], "old": [["o", "c3"], ["ld", "c2"]], "car": [["c", "c2"], ["ar", "c3"]], "bus": [["b", "c2"], ["u", "c1"], ["s", "c2"]], "train": [["tr", "c4"], ["ain", "c3"]], "bike": [["b", "c2"], ["i", "c3"], ["ke", "c5"]], "plane": [["pl", "c4"], ["a", "c3"], ["ne", "c5"]], "boat": [["b", "c2"], ["oa", "c3"], ["t", "c2"]], "taxi": [["t", "c2"], ["ax", "c1"], ["i", "c3"]], "truck": [["tr", "c4"], ["u", "c1"], ["ck", "c2"]], "park": [["p", "c2"], ["ar", "c3"], ["k", "c2"]], "store": [["st", "c4"], ["ore", "c3"]], "hospital": [["h", "c2"], ["os", "c1"], ["pi", "c2"], ["tal", "c2"]], "beach": [["b", "c2"], ["ea", "c3"], ["ch", "c4"]], "mountain": [["m", "c2"], ["oun", "c3"], ["tain", "c3"]], "river": [["r", "c2"], ["iv", "c1"], ["er", "c2"]], "city": [["c", "c2"], ["i", "c1"], ["ty", "c2"]], "farm": [["f", "c2"], ["ar", "c3"], ["m", "c2"]], "market": [["m", "c2"], ["ar", "c3"], ["ket", "c2"]], "left": [["l", "c2"], ["e", "c1"], ["ft", "c4"]], "right": [["r", "c2"], ["igh", "c3"], ["t", "c2"]], "up": [["u", "c1"], ["p", "c2"]], "down": [["d", "c2"], ["own", "c3"]], "front": [["fr", "c4"], ["ont", "c1"]], "back": [["b", "c2"], ["a", "c1"], ["ck", "c2"]], "near": [["n", "c2"], ["ear", "c3"]], "far": [["f", "c2"], ["ar", "c3"]], "one": [["o", "c3"], ["ne", "c5"]], "two": [["tw", "c4"], ["o", "c3"]], "three": [["th", "c4"], ["r", "c2"], ["ee", "c3"]], "four": [["f", "c2"], ["our", "c3"]], "five": [["f", "c2"], ["i", "c3"], ["ve", "c5"]], "six": [["s", "c2"], ["i", "c1"], ["x", "c2"]], "seven": [["s", "c2"], ["ev", "c1"], ["en", "c2"]], "eight": [["e", "c2"], ["igh", "c3"], ["t", "c2"]], "nine": [["n", "c2"], ["i", "c3"], ["ne", "c5"]], "ten": [["t", "c2"], ["e", "c1"], ["n", "c2"]], "helicopter": [["hel", "c2"], ["i", "c1"], ["cop", "c2"], ["ter", "c2"]], "rescue": [["r", "c2"], ["es", "c1"], ["c", "c2"], ["ue", "c3"]], "enormous": [["e", "c1"], ["nor", "c3"], ["m", "c2"], ["ous", "c3"]], "picture": [["pic", "c2"], ["t", "c2"], ["ure", "c3"]], "castle": [["c", "c2"], ["a", "c1"], ["st", "c4"], ["le", "c5"]], "knight": [["kn", "c5"], ["igh", "c3"], ["t", "c2"]], "wood": [["w", "c2"], ["oo", "c3"], ["d", "c2"]], "outside": [["out", "c3"], ["side", "c3"]], "push": [["p", "c2"], ["u", "c1"], ["sh", "c4"]], "race": [["r", "c2"], ["a", "c3"], ["ce", "c5"]], "ambulance": [["am", "c1"], ["bu", "c2"], ["lance", "c2"]], "toy": [["t", "c2"], ["oy", "c3"]], "spring": [["spr", "c4"], ["ing", "c1"]], "summer": [["s", "c2"], ["umm", "c1"], ["er", "c2"]], "autumn": [["au", "c3"], ["tumn", "c2"]], "winter": [["w", "c2"], ["in", "c1"], ["ter", "c2"]], "weather": [["w", "c2"], ["ea", "c3"], ["th", "c4"], ["er", "c2"]], "sunny": [["s", "c2"], ["unn", "c1"], ["y", "c2"]], "rainy": [["r", "c2"], ["ain", "c3"], ["y", "c2"]], "windy": [["w", "c2"], ["ind", "c1"], ["y", "c2"]], "cloudy": [["cl", "c4"], ["oud", "c3"], ["y", "c2"]], "warm": [["w", "c2"], ["ar", "c3"], ["m", "c2"]], "cool": [["c", "c2"], ["ool", "c3"]], "snowy": [["sn", "c4"], ["ow", "c3"], ["y", "c2"]], "rainbow": [["r", "c2"], ["ain", "c3"], ["bow", "c3"]], "sun": [["s", "c2"], ["u", "c1"], ["n", "c2"]], "moon": [["m", "c2"], ["oo", "c3"], ["n", "c2"]], "star": [["st", "c4"], ["ar", "c3"]], "cloud": [["cl", "c4"], ["ou", "c3"], ["d", "c2"]], "rain": [["r", "c2"], ["ain", "c3"]], "snow": [["sn", "c4"], ["ow", "c3"]], "flower": [["fl", "c4"], ["ow", "c3"], ["er", "c2"]], "tree": [["tr", "c4"], ["ee", "c3"]], "grass": [["gr", "c4"], ["ass", "c1"]], "Monday": [["M", "c2"], ["on", "c1"], ["day", "c3"]], "Tuesday": [["T", "c2"], ["ues", "c3"], ["day", "c3"]], "Wednesday": [["W", "c2"], ["ed", "c1"], ["nes", "c2"], ["day", "c3"]], "Thursday": [["Th", "c4"], ["ur", "c3"], ["sday", "c3"]], "Friday": [["Fr", "c4"], ["i", "c3"], ["day", "c3"]], "Saturday": [["S", "c2"], ["at", "c1"], ["ur", "c3"], ["day", "c3"]], "Sunday": [["S", "c2"], ["un", "c1"], ["day", "c3"]], "morning": [["m", "c2"], ["or", "c3"], ["ning", "c2"]], "afternoon": [["af", "c1"], ["ter", "c2"], ["n", "c2"], ["oon", "c3"]], "evening": [["eve", "c3"], ["ning", "c2"]], "night": [["n", "c2"], ["igh", "c3"], ["t", "c2"]]};
+var PH_COLOR = {c1:'#f87171',c2:'#86efac',c3:'#60a5fa',c4:'#fbbf24',c5:'#9ca3af'};
+var PH_LABEL = {c1:'短母音',c2:'子音',c3:'長母音',c4:'特殊組合',c5:'靜音'};
+
+function getPhHtml(en){
+  var segs=PH_MAP[en];
+  if(!segs) return '<span style="font-weight:900;color:#fff">'+en+'</span>';
+  var out='';
+  for(var i=0;i<segs.length;i++){
+    var t=segs[i][0], c=segs[i][1];
+    var col=PH_COLOR[c]||'#fff';
+    out+='<span style="color:'+col+';font-weight:900;border-bottom:2px solid '+col+'50;padding-bottom:1px" onclick="speak(\''+t+'\')" title="'+(PH_LABEL[c]||'')+'">'+t+'</span>';
+  }
+  return out;
+}
+
+function getPhLegend(en){
+  var segs=PH_MAP[en];
+  if(!segs) return '';
+  var seen={};
+  var parts=[];
+  for(var i=0;i<segs.length;i++){
+    var c=segs[i][1];
+    if(!seen[c]&&PH_LABEL[c]){
+      seen[c]=1;
+      var col=PH_COLOR[c]||'#fff';
+      parts.push('<span style="color:'+col+'">■</span>'+PH_LABEL[c]);
+    }
+  }
+  return parts.join('  ');
 }
 
 // =============================================
