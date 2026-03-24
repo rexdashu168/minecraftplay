@@ -2,552 +2,934 @@
 
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>小蛹的 Minecraft 生存冒險</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-        body { font-family: 'Courier New', monospace; background: #1a1a2e; min-height: 100vh; overflow: hidden; }
-        .game-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>小蛹的 Minecraft 英文積木世界</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
+body{font-family:'Arial',sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);min-height:100vh;overflow-x:hidden}
 
-```
-    .top-bar {
-        background: rgba(0,0,0,0.85); padding: 8px 12px;
-        display: flex; justify-content: space-between; align-items: center;
-        border-bottom: 3px solid #444; flex-wrap: wrap; gap: 5px;
-    }
-    .stats { display: flex; gap: 12px; align-items: center; }
-    .stat-row { display: flex; align-items: center; gap: 2px; }
-    .stat-icon { font-size: 1rem; }
-    .hearts, .foods { display: flex; gap: 1px; font-size: 0.85rem; }
-    .game-info { display: flex; gap: 12px; font-size: 0.75rem; color: #aaa; align-items: center; }
-    .day-badge { padding: 3px 8px; border-radius: 3px; font-weight: bold; }
-    .day-badge.day { background: #f4d03f; color: #333; }
-    .day-badge.night { background: #2c3e50; color: #fff; }
+/* 開始畫面 */
+.start-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#87CEEB 0%,#87CEEB 60%,#5cb85c 60%,#3d8b3d 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000}
+.start-screen.hidden{display:none}
+.logo{font-size:80px;animation:bounce 1s infinite}
+@keyframes bounce{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-20px) rotate(5deg)}}
+.title{font-size:28px;color:#fff;text-shadow:3px 3px 0 #000,-1px -1px 0 #000;margin:10px 0}
+.subtitle{color:#ffeb3b;font-size:16px;text-shadow:2px 2px 0 #000;margin-bottom:20px}
+.start-btn{background:linear-gradient(180deg,#4CAF50,#388E3C);border:4px solid #2E7D32;padding:15px 50px;color:#fff;font-size:22px;border-radius:8px;text-shadow:2px 2px #000;cursor:pointer;box-shadow:0 6px 0 #1B5E20}
+.start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #1B5E20}
+.features{display:flex;gap:15px;margin-top:25px;flex-wrap:wrap;justify-content:center;padding:0 20px}
+.feature{background:rgba(0,0,0,0.5);padding:10px 15px;border-radius:10px;color:#fff;font-size:12px;text-align:center}
+.feature span{font-size:24px;display:block;margin-bottom:5px}
 
-    .game-world { flex: 1; position: relative; overflow: hidden; background: #87CEEB; }
-    .game-world.night { background: #1a1a2e; }
-    .world-map { position: absolute; transition: transform 0.12s ease; }
+/* 主遊戲畫面 */
+.game-container{display:none;min-height:100vh;padding:10px;padding-bottom:80px}
+.game-container.active{display:block}
 
-    .tile {
-        position: absolute; width: 48px; height: 48px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.6rem; cursor: pointer; transition: transform 0.08s;
-        border: 1px solid rgba(0,0,0,0.1);
-    }
-    .tile:hover { transform: scale(1.08); z-index: 5; }
-    .tile:active { transform: scale(0.95); }
-    .tile.grass { background: linear-gradient(135deg, #4ade80, #22c55e); }
-    .tile.dirt { background: linear-gradient(135deg, #a16207, #854d0e); }
-    .tile.stone { background: linear-gradient(135deg, #9ca3af, #6b7280); }
-    .tile.water { background: linear-gradient(135deg, #60a5fa, #3b82f6); cursor: not-allowed; }
-    .tile.sand { background: linear-gradient(135deg, #fde047, #eab308); }
-    .tile.coal-ore { background: linear-gradient(135deg, #4b5563, #374151); }
-    .tile.iron-ore { background: linear-gradient(135deg, #d4d4d8, #a1a1aa); }
-    .tile.gold-ore { background: linear-gradient(135deg, #fcd34d, #f59e0b); }
-    .tile.diamond-ore { background: linear-gradient(135deg, #67e8f9, #22d3ee); }
+/* 頂部狀態欄 */
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 15px;background:rgba(0,0,0,0.7);border-radius:12px;margin-bottom:10px;flex-wrap:wrap;gap:10px}
+.stat{display:flex;align-items:center;gap:5px;color:#fff;font-size:14px}
+.stat-icon{font-size:20px}
+.level-badge{background:linear-gradient(135deg,#FFD700,#FFA500);padding:5px 12px;border-radius:20px;font-weight:bold;color:#000;font-size:12px}
 
-    .player {
-        position: absolute; width: 48px; height: 48px; font-size: 1.8rem;
-        display: flex; align-items: center; justify-content: center;
-        z-index: 100; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.5));
-    }
+/* 建築進度區 */
+.building-area{background:linear-gradient(180deg,#87CEEB 0%,#87CEEB 50%,#8B4513 50%,#654321 100%);border-radius:15px;padding:15px;margin-bottom:10px;min-height:200px;position:relative;overflow:hidden}
+.building-title{color:#fff;text-shadow:2px 2px #000;font-size:16px;margin-bottom:10px;text-align:center}
+.building-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;max-width:320px;margin:0 auto}
+.block{aspect-ratio:1;border-radius:3px;transition:all 0.3s;position:relative}
+.block.empty{background:rgba(255,255,255,0.1);border:1px dashed rgba(255,255,255,0.3)}
+.block.filled{animation:placeBlock 0.5s}
+@keyframes placeBlock{0%{transform:scale(0) rotate(180deg)}100%{transform:scale(1) rotate(0deg)}}
+.block.wood{background:linear-gradient(135deg,#8B4513,#654321)}
+.block.stone{background:linear-gradient(135deg,#808080,#606060)}
+.block.grass{background:linear-gradient(180deg,#5cb85c 30%,#8B4513 30%)}
+.block.glass{background:linear-gradient(135deg,#87CEEB,#5fb3d4);opacity:0.7}
+.block.brick{background:linear-gradient(135deg,#B22222,#8B0000)}
+.block.gold{background:linear-gradient(135deg,#FFD700,#DAA520)}
+.building-progress{text-align:center;margin-top:10px;color:#fff;text-shadow:1px 1px #000;font-size:14px}
+.progress-bar{height:12px;background:rgba(0,0,0,0.5);border-radius:6px;margin-top:5px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#4CAF50,#8BC34A);border-radius:6px;transition:width 0.5s}
 
-    .entity {
-        position: absolute; width: 48px; height: 48px; font-size: 1.5rem;
-        display: flex; align-items: center; justify-content: center;
-        z-index: 50; cursor: pointer; transition: left 0.25s, top 0.25s;
-    }
-    .entity:hover { transform: scale(1.15); }
-    .entity-hp {
-        position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
-        background: #333; width: 36px; height: 5px; border-radius: 2px; overflow: hidden;
-    }
-    .entity-hp-fill { height: 100%; background: #ef4444; transition: width 0.2s; }
+/* 題目區 */
+.question-area{background:rgba(255,255,255,0.95);border-radius:15px;padding:20px;margin-bottom:10px;box-shadow:0 4px 15px rgba(0,0,0,0.3)}
+.question-type{display:inline-block;padding:5px 12px;border-radius:20px;font-size:12px;color:#fff;margin-bottom:10px}
+.question-type.vocab{background:#2196F3}
+.question-type.spell{background:#9C27B0}
+.question-type.read{background:#FF9800}
+.question-type.listen{background:#E91E63}
+.question-word{font-size:36px;text-align:center;margin:15px 0}
+.question-text{font-size:18px;text-align:center;color:#333;margin:10px 0;line-height:1.6}
+.question-hint{font-size:14px;color:#666;text-align:center;margin:10px 0}
+.question-sentence{font-size:16px;color:#555;text-align:center;margin:10px 0;font-style:italic}
 
-    .bottom-bar { background: rgba(0,0,0,0.9); padding: 8px; border-top: 3px solid #444; }
+/* 選項按鈕 */
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}
+.option-btn{padding:15px;font-size:16px;border:3px solid #ddd;border-radius:12px;background:#fff;cursor:pointer;transition:all 0.2s;color:#333}
+.option-btn:active{transform:scale(0.95)}
+.option-btn.correct{background:#4CAF50;border-color:#388E3C;color:#fff;animation:correct 0.5s}
+.option-btn.wrong{background:#f44336;border-color:#c62828;color:#fff;animation:shake 0.5s}
+@keyframes correct{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
 
-    .hotbar { display: flex; justify-content: center; gap: 3px; margin-bottom: 8px; }
-    .slot {
-        width: 44px; height: 44px; background: #555; border: 3px solid #333;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        font-size: 1.3rem; position: relative; cursor: pointer;
-    }
-    .slot.selected { border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.5); }
-    .slot .qty {
-        position: absolute; bottom: 1px; right: 3px;
-        font-size: 0.55rem; color: #fff; font-weight: bold; text-shadow: 1px 1px #000;
-    }
+/* 拼寫輸入 */
+.spell-input{display:flex;justify-content:center;gap:8px;margin:20px 0;flex-wrap:wrap}
+.spell-box{width:40px;height:50px;border:3px solid #2196F3;border-radius:8px;font-size:24px;text-align:center;text-transform:uppercase;background:#fff}
+.spell-box:focus{border-color:#1976D2;outline:none;box-shadow:0 0 10px rgba(33,150,243,0.5)}
+.spell-box.correct{border-color:#4CAF50;background:#E8F5E9}
+.spell-box.wrong{border-color:#f44336;background:#FFEBEE}
 
-    .controls { display: flex; justify-content: space-between; align-items: center; }
-    .dpad { display: grid; grid-template-columns: repeat(3, 42px); grid-template-rows: repeat(3, 42px); gap: 2px; }
-    .dpad-btn {
-        background: #444; border: 2px solid #666; border-radius: 4px;
-        font-size: 1.1rem; color: white; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-    }
-    .dpad-btn:hover { background: #555; }
-    .dpad-btn:active { background: #333; }
-    .dpad-btn.empty { background: transparent; border: none; }
+/* 鍵盤 */
+.keyboard{display:flex;flex-direction:column;gap:5px;margin-top:15px}
+.key-row{display:flex;justify-content:center;gap:4px}
+.key{min-width:28px;height:40px;border:none;border-radius:6px;font-size:16px;font-weight:bold;cursor:pointer;background:linear-gradient(180deg,#f5f5f5,#e0e0e0);color:#333;box-shadow:0 2px 0 #bbb}
+.key:active{transform:translateY(2px);box-shadow:0 0 0 #bbb}
+.key.wide{min-width:60px;font-size:12px}
+.key.enter{background:linear-gradient(180deg,#4CAF50,#388E3C);color:#fff;box-shadow:0 2px 0 #1B5E20}
 
-    .action-btns { display: flex; flex-direction: column; gap: 6px; }
-    .act-btn {
-        padding: 10px 16px; font-size: 0.8rem; font-weight: bold;
-        border: 3px solid; border-radius: 6px; cursor: pointer; font-family: inherit;
-    }
-    .act-btn.red { background: #dc2626; border-color: #991b1b; color: white; }
-    .act-btn.green { background: #16a34a; border-color: #15803d; color: white; }
-    .act-btn:active { transform: scale(0.95); }
+/* 聽力按鈕 */
+.listen-btn{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#E91E63,#C2185B);border:none;font-size:40px;cursor:pointer;margin:20px auto;display:block;box-shadow:0 6px 0 #880E4F;transition:all 0.2s}
+.listen-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #880E4F}
+.listen-btn.playing{animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 
-    .modal {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.92); display: none;
-        align-items: center; justify-content: center; z-index: 1000;
-    }
-    .modal.show { display: flex; }
-    .modal-box {
-        background: #2d2d2d; border: 4px solid #555; padding: 18px;
-        max-width: 320px; width: 90%; max-height: 75vh; overflow-y: auto;
-    }
-    .modal-title { font-size: 1.1rem; color: #fff; margin-bottom: 12px; text-align: center; }
-    .recipe {
-        background: #444; border: 2px solid #555; padding: 10px; margin-bottom: 6px;
-        display: flex; align-items: center; justify-content: space-between; cursor: pointer;
-    }
-    .recipe:hover { background: #555; }
-    .recipe.disabled { opacity: 0.4; cursor: not-allowed; }
-    .recipe-info { display: flex; align-items: center; gap: 8px; }
-    .recipe-icon { font-size: 1.3rem; }
-    .recipe-name { color: #fff; font-size: 0.8rem; }
-    .recipe-cost { color: #aaa; font-size: 0.65rem; }
-    .recipe-btn { background: #16a34a; border: none; color: white; padding: 4px 10px; font-size: 0.7rem; cursor: pointer; }
-    .close-btn { background: #666; border: none; color: white; padding: 10px; width: 100%; margin-top: 10px; cursor: pointer; font-family: inherit; }
+/* 結果顯示 */
+.result-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:500}
+.result-overlay.show{display:flex}
+.result-box{background:#fff;border-radius:20px;padding:30px;text-align:center;max-width:90%;animation:popIn 0.3s}
+@keyframes popIn{0%{transform:scale(0)}100%{transform:scale(1)}}
+.result-icon{font-size:80px;margin-bottom:15px}
+.result-text{font-size:24px;font-weight:bold;margin-bottom:10px}
+.result-detail{font-size:16px;color:#666;margin-bottom:20px}
+.result-btn{padding:12px 30px;font-size:18px;border:none;border-radius:10px;cursor:pointer;color:#fff}
+.result-btn.next{background:linear-gradient(180deg,#4CAF50,#388E3C)}
+.result-btn.retry{background:linear-gradient(180deg,#FF9800,#F57C00)}
 
-    .toast {
-        position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
-        background: rgba(0,0,0,0.85); color: #fff; padding: 8px 16px;
-        border-radius: 4px; font-size: 0.8rem; z-index: 500; display: none;
-    }
-    .toast.show { display: block; animation: fadeToast 2s ease forwards; }
-    @keyframes fadeToast {
-        0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-        15%, 85% { opacity: 1; transform: translateX(-50%) translateY(0); }
-        100% { opacity: 0; }
-    }
+/* 關卡選擇 */
+.level-select{display:none;padding:20px}
+.level-select.active{display:block}
+.level-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px;margin-top:20px}
+.level-card{background:linear-gradient(135deg,#667eea,#764ba2);border-radius:15px;padding:20px;color:#fff;cursor:pointer;transition:transform 0.2s;position:relative;overflow:hidden}
+.level-card:active{transform:scale(0.95)}
+.level-card.locked{background:linear-gradient(135deg,#666,#444);cursor:not-allowed}
+.level-card.locked::after{content:‘🔒’;position:absolute;top:10px;right:10px;font-size:24px}
+.level-card.completed::after{content:‘⭐’;position:absolute;top:10px;right:10px;font-size:24px}
+.level-num{font-size:32px;font-weight:bold}
+.level-name{font-size:14px;margin-top:5px;opacity:0.9}
+.level-desc{font-size:12px;margin-top:8px;opacity:0.7}
 
-    .gameover-screen {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(139,0,0,0.9); display: none;
-        align-items: center; justify-content: center; flex-direction: column; z-index: 2000;
-    }
-    .gameover-screen.show { display: flex; }
-    .gameover-screen h1 { color: #fff; font-size: 1.8rem; margin-bottom: 15px; }
-    .gameover-screen p { color: #faa; margin-bottom: 20px; }
-    .gameover-screen button { padding: 12px 25px; font-size: 1rem; background: #444; border: 3px solid #666; color: white; cursor: pointer; }
+/* 成就 */
+.achievements{position:fixed;top:50px;right:10px;z-index:100}
+.achievement-popup{background:linear-gradient(135deg,#FFD700,#FFA500);padding:10px 15px;border-radius:10px;color:#000;font-size:14px;animation:slideIn 0.5s,slideOut 0.5s 2.5s forwards;box-shadow:0 4px 15px rgba(0,0,0,0.3)}
+@keyframes slideIn{0%{transform:translateX(200px);opacity:0}100%{transform:translateX(0);opacity:1}}
+@keyframes slideOut{0%{transform:translateX(0);opacity:1}100%{transform:translateX(200px);opacity:0}}
 
-    .start-screen {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: linear-gradient(180deg, #87CEEB 0%, #87CEEB 55%, #22c55e 55%);
-        display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 3000;
-    }
-    .start-screen.hidden { display: none; }
-    .start-logo { font-size: 4.5rem; margin-bottom: 15px; animation: bounce 1s infinite; }
-    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    .start-title { font-size: 1.5rem; color: #fff; text-shadow: 3px 3px 0 #333; margin-bottom: 8px; text-align: center; }
-    .start-sub { color: #333; margin-bottom: 25px; font-size: 0.85rem; }
-    .start-btn {
-        background: #4ade80; border: 4px solid #22c55e; color: #fff;
-        padding: 14px 35px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
-        font-family: inherit; text-shadow: 1px 1px #333;
-    }
-    .start-btn:hover { background: #22c55e; }
-    .tips { margin-top: 25px; color: #333; font-size: 0.7rem; text-align: center; line-height: 1.6; }
+/* 底部導航 */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.9);display:flex;justify-content:space-around;padding:10px 0;z-index:100}
+.nav-btn{background:none;border:none;color:#fff;font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;opacity:0.7}
+.nav-btn.active{opacity:1}
+.nav-btn span:first-child{font-size:24px}
 
-    @media (max-width: 400px) {
-        .tile, .player, .entity { width: 40px; height: 40px; font-size: 1.3rem; }
-        .slot { width: 38px; height: 38px; font-size: 1.1rem; }
-        .dpad { grid-template-columns: repeat(3, 38px); grid-template-rows: repeat(3, 38px); }
-    }
+/* 統計頁面 */
+.stats-page{display:none;padding:20px}
+.stats-page.active{display:block}
+.stats-card{background:rgba(255,255,255,0.1);border-radius:15px;padding:20px;margin-bottom:15px}
+.stats-title{color:#fff;font-size:18px;margin-bottom:15px}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
+.stat-item{text-align:center;color:#fff}
+.stat-value{font-size:32px;font-weight:bold;color:#4CAF50}
+.stat-label{font-size:12px;opacity:0.7;margin-top:5px}
+
+/* 單字本 */
+.wordbook{display:none;padding:20px}
+.wordbook.active{display:block}
+.word-list{max-height:70vh;overflow-y:auto}
+.word-item{background:rgba(255,255,255,0.1);border-radius:10px;padding:15px;margin-bottom:10px;color:#fff}
+.word-en{font-size:20px;font-weight:bold}
+.word-zh{font-size:14px;opacity:0.8;margin-top:5px}
+.word-sentence{font-size:12px;opacity:0.6;margin-top:8px;font-style:italic}
 </style>
-```
 
 </head>
 <body>
-    <div class="start-screen" id="startScreen">
-        <div class="start-logo">⛏️</div>
-        <h1 class="start-title">小蛹的 Minecraft<br>生存冒險</h1>
-        <p class="start-sub">探索・收集・合成・生存！</p>
-        <button class="start-btn" onclick="startGame()">開始生存 ▶</button>
-        <div class="tips">
-            🎮 方向鍵/WASD 移動<br>
-            👆 點地圖挖掘資源<br>
-            ⚔️ 點怪物或按攻擊鍵戰鬥<br>
-            🔨 收集材料合成工具武器
-        </div>
-    </div>
 
-```
-<div class="game-container">
-    <div class="top-bar">
-        <div class="stats">
-            <div class="stat-row"><span class="stat-icon">❤️</span><div class="hearts" id="hearts"></div></div>
-            <div class="stat-row"><span class="stat-icon">🍖</span><div class="foods" id="foods"></div></div>
-        </div>
-        <div class="game-info">
-            <div class="day-badge day" id="dayBadge">☀️ 第1天</div>
-            <div>💰 <span id="score">0</span></div>
-        </div>
-    </div>
+<!-- 開始畫面 -->
 
-    <div class="game-world" id="gameWorld">
-        <div class="world-map" id="worldMap"></div>
-        <div class="player" id="player">🧑</div>
-    </div>
-
-    <div class="bottom-bar">
-        <div class="hotbar" id="hotbar"></div>
-        <div class="controls">
-            <div class="dpad">
-                <div class="dpad-btn empty"></div>
-                <div class="dpad-btn" onclick="move(0,-1)">⬆️</div>
-                <div class="dpad-btn empty"></div>
-                <div class="dpad-btn" onclick="move(-1,0)">⬅️</div>
-                <div class="dpad-btn empty"></div>
-                <div class="dpad-btn" onclick="move(1,0)">➡️</div>
-                <div class="dpad-btn empty"></div>
-                <div class="dpad-btn" onclick="move(0,1)">⬇️</div>
-                <div class="dpad-btn empty"></div>
-            </div>
-            <div class="action-btns">
-                <button class="act-btn red" onclick="attackNearest()">⚔️ 攻擊</button>
-                <button class="act-btn green" onclick="openCraft()">🔨 合成</button>
-            </div>
-        </div>
-    </div>
+<div class="start-screen" id="startScreen">
+  <div class="logo">🧱</div>
+  <div class="title">Minecraft 英文積木世界</div>
+  <div class="subtitle">小蛹的英文冒險</div>
+  <button class="start-btn" onclick="startGame()">開始冒險</button>
+  <div class="features">
+    <div class="feature"><span>📚</span>學單字</div>
+    <div class="feature"><span>✏️</span>練拼寫</div>
+    <div class="feature"><span>📖</span>讀句子</div>
+    <div class="feature"><span>🔊</span>聽發音</div>
+  </div>
 </div>
 
-<div class="modal" id="craftModal">
-    <div class="modal-box">
-        <h2 class="modal-title">🔨 合成台</h2>
-        <div id="recipeList"></div>
-        <button class="close-btn" onclick="closeCraft()">關閉</button>
+<!-- 主遊戲 -->
+
+<div class="game-container" id="gameContainer">
+  <!-- 頂部狀態欄 -->
+  <div class="top-bar">
+    <div class="stat"><span class="stat-icon">🧱</span><span id="blocksCount">0</span></div>
+    <div class="level-badge" id="levelBadge">第1關：我的小屋</div>
+    <div class="stat"><span class="stat-icon">⭐</span><span id="starsCount">0</span></div>
+  </div>
+
+  <!-- 建築區 -->
+
+  <div class="building-area">
+    <div class="building-title" id="buildingTitle">🏠 我的小屋 (0/30)</div>
+    <div class="building-grid" id="buildingGrid"></div>
+    <div class="building-progress">
+      <span id="progressText">收集積木來建造房屋！</span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     </div>
+  </div>
+
+  <!-- 題目區 -->
+
+  <div class="question-area" id="questionArea">
+    <span class="question-type vocab" id="questionType">👀 看圖選字</span>
+    <div class="question-word" id="questionWord">🍎</div>
+    <div class="question-text" id="questionText">這是什麼？</div>
+    <div class="question-hint" id="questionHint"></div>
+    <div class="question-sentence" id="questionSentence"></div>
+    <div class="options" id="optionsArea"></div>
+    <div class="spell-input" id="spellInput" style="display:none"></div>
+    <div class="keyboard" id="keyboard" style="display:none"></div>
+    <button class="listen-btn" id="listenBtn" style="display:none">🔊</button>
+  </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- 關卡選擇 -->
 
-<div class="gameover-screen" id="gameoverScreen">
-    <h1>💀 你死了</h1>
-    <p id="deathMsg">被怪物擊敗</p>
-    <button onclick="restart()">重新開始</button>
+<div class="level-select" id="levelSelect">
+  <div class="top-bar">
+    <div class="stat"><span class="stat-icon">🧱</span><span id="blocksCount2">0</span></div>
+    <div style="color:#fff;font-size:18px">選擇關卡</div>
+    <div class="stat"><span class="stat-icon">⭐</span><span id="starsCount2">0</span></div>
+  </div>
+  <div class="level-grid" id="levelGrid"></div>
 </div>
+
+<!-- 統計頁面 -->
+
+<div class="stats-page" id="statsPage">
+  <div class="top-bar">
+    <div style="color:#fff;font-size:18px">📊 學習統計</div>
+  </div>
+  <div class="stats-card">
+    <div class="stats-title">今日學習</div>
+    <div class="stats-grid">
+      <div class="stat-item"><div class="stat-value" id="todayWords">0</div><div class="stat-label">學習單字</div></div>
+      <div class="stat-item"><div class="stat-value" id="todayCorrect">0</div><div class="stat-label">答對題數</div></div>
+      <div class="stat-item"><div class="stat-value" id="todayBlocks">0</div><div class="stat-label">獲得積木</div></div>
+      <div class="stat-item"><div class="stat-value" id="todayTime">0</div><div class="stat-label">學習分鐘</div></div>
+    </div>
+  </div>
+  <div class="stats-card">
+    <div class="stats-title">總成就</div>
+    <div class="stats-grid">
+      <div class="stat-item"><div class="stat-value" id="totalWords">0</div><div class="stat-label">已學單字</div></div>
+      <div class="stat-item"><div class="stat-value" id="totalStars">0</div><div class="stat-label">獲得星星</div></div>
+      <div class="stat-item"><div class="stat-value" id="totalBuildings">0</div><div class="stat-label">完成建築</div></div>
+      <div class="stat-item"><div class="stat-value" id="totalDays">0</div><div class="stat-label">學習天數</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 單字本 -->
+
+<div class="wordbook" id="wordbook">
+  <div class="top-bar">
+    <div style="color:#fff;font-size:18px">📖 我的單字本</div>
+  </div>
+  <div class="word-list" id="wordList"></div>
+</div>
+
+<!-- 底部導航 -->
+
+<div class="bottom-nav" id="bottomNav" style="display:none">
+  <button class="nav-btn active" onclick="showPage('game')"><span>🎮</span>遊戲</button>
+  <button class="nav-btn" onclick="showPage('levels')"><span>🗺️</span>關卡</button>
+  <button class="nav-btn" onclick="showPage('wordbook')"><span>📖</span>單字</button>
+  <button class="nav-btn" onclick="showPage('stats')"><span>📊</span>統計</button>
+</div>
+
+<!-- 結果彈窗 -->
+
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-box">
+    <div class="result-icon" id="resultIcon">🎉</div>
+    <div class="result-text" id="resultText">答對了！</div>
+    <div class="result-detail" id="resultDetail">+1 積木</div>
+    <button class="result-btn next" id="resultBtn" onclick="nextQuestion()">下一題</button>
+  </div>
+</div>
+
+<!-- 成就提示 -->
+
+<div class="achievements" id="achievements"></div>
 
 <script>
-    const SIZE = 25, TILE = 48;
-    const ITEMS = {
-        wood: { n: '木頭', i: '🪵' }, stone: { n: '石頭', i: '🪨' }, coal: { n: '煤炭', i: '⬛' },
-        iron: { n: '鐵礦', i: '🔩' }, gold: { n: '金礦', i: '🥇' }, diamond: { n: '鑽石', i: '💎' },
-        meat: { n: '肉', i: '🍖' }, apple: { n: '蘋果', i: '🍎' },
-        woodSword: { n: '木劍', i: '🗡️', dmg: 3 }, stoneSword: { n: '石劍', i: '⚔️', dmg: 5 },
-        ironSword: { n: '鐵劍', i: '🔪', dmg: 8 }, diamondSword: { n: '鑽石劍', i: '💠', dmg: 12 },
-        woodPick: { n: '木鎬', i: '⛏️', pow: 1 }, stonePick: { n: '石鎬', i: '⛏️', pow: 2 },
-        ironPick: { n: '鐵鎬', i: '⛏️', pow: 3 },
-    };
-    const RECIPES = [
-        { r: 'woodSword', i: '🗡️', n: '木劍', c: { wood: 3 }, d: '攻擊+3' },
-        { r: 'woodPick', i: '⛏️', n: '木鎬', c: { wood: 5 }, d: '挖礦+1' },
-        { r: 'stoneSword', i: '⚔️', n: '石劍', c: { stone: 3, wood: 2 }, d: '攻擊+5' },
-        { r: 'stonePick', i: '⛏️', n: '石鎬', c: { stone: 5, wood: 2 }, d: '挖礦+2' },
-        { r: 'ironSword', i: '🔪', n: '鐵劍', c: { iron: 3, wood: 2 }, d: '攻擊+8' },
-        { r: 'ironPick', i: '⛏️', n: '鐵鎬', c: { iron: 5, wood: 2 }, d: '挖礦+3' },
-        { r: 'diamondSword', i: '💠', n: '鑽石劍', c: { diamond: 3, wood: 2 }, d: '攻擊+12' },
-    ];
-    const MOBS = [
-        { n: '殭屍', i: '🧟', hp: 20, dmg: 2 }, { n: '骷髏', i: '💀', hp: 15, dmg: 3 },
-        { n: '蜘蛛', i: '🕷️', hp: 12, dmg: 2 }, { n: '苦力怕', i: '💚', hp: 20, dmg: 5 },
-    ];
+// ===== 單字資料庫 =====
+const LEVELS = [
+  {
+    id: 1,
+    name: '我的小屋',
+    icon: '🏠',
+    building: 'house',
+    blocksNeeded: 30,
+    blockTypes: ['wood', 'glass', 'stone'],
+    words: [
+      {en:'apple',zh:'蘋果',img:'🍎',sentence:'I like to eat an apple.'},
+      {en:'book',zh:'書本',img:'📚',sentence:'I read a book every day.'},
+      {en:'cat',zh:'貓咪',img:'🐱',sentence:'The cat is cute.'},
+      {en:'dog',zh:'狗狗',img:'🐕',sentence:'I have a dog.'},
+      {en:'egg',zh:'雞蛋',img:'🥚',sentence:'I eat an egg for breakfast.'},
+      {en:'fish',zh:'魚',img:'🐟',sentence:'The fish swims in water.'},
+      {en:'girl',zh:'女孩',img:'👧',sentence:'The girl is happy.'},
+      {en:'house',zh:'房子',img:'🏠',sentence:'This is my house.'},
+      {en:'ice',zh:'冰',img:'🧊',sentence:'The ice is cold.'},
+      {en:'juice',zh:'果汁',img:'🧃',sentence:'I drink orange juice.'}
+    ]
+  },
+  {
+    id: 2,
+    name: '農場樂園',
+    icon: '🌾',
+    building: 'farm',
+    blocksNeeded: 35,
+    blockTypes: ['wood', 'grass', 'stone'],
+    words: [
+      {en:'king',zh:'國王',img:'🤴',sentence:'The king lives in a castle.'},
+      {en:'lion',zh:'獅子',img:'🦁',sentence:'The lion is strong.'},
+      {en:'milk',zh:'牛奶',img:'🥛',sentence:'I drink milk every morning.'},
+      {en:'nose',zh:'鼻子',img:'👃',sentence:'I smell with my nose.'},
+      {en:'orange',zh:'橘子',img:'🍊',sentence:'The orange is sweet.'},
+      {en:'pig',zh:'豬',img:'🐷',sentence:'The pig is pink.'},
+      {en:'queen',zh:'皇后',img:'👸',sentence:'The queen is beautiful.'},
+      {en:'rabbit',zh:'兔子',img:'🐰',sentence:'The rabbit hops fast.'},
+      {en:'sun',zh:'太陽',img:'☀️',sentence:'The sun is bright.'},
+      {en:'tree',zh:'樹',img:'🌳',sentence:'The tree is tall.'}
+    ]
+  },
+  {
+    id: 3,
+    name: '城市冒險',
+    icon: '🏙️',
+    building: 'city',
+    blocksNeeded: 40,
+    blockTypes: ['stone', 'glass', 'brick'],
+    words: [
+      {en:'umbrella',zh:'雨傘',img:'☂️',sentence:'I use an umbrella when it rains.'},
+      {en:'vegetable',zh:'蔬菜',img:'🥬',sentence:'I eat vegetables for lunch.'},
+      {en:'water',zh:'水',img:'💧',sentence:'I drink water every day.'},
+      {en:'box',zh:'盒子',img:'📦',sentence:'The box is big.'},
+      {en:'yellow',zh:'黃色',img:'💛',sentence:'The banana is yellow.'},
+      {en:'zoo',zh:'動物園',img:'🦒',sentence:'I go to the zoo on Sunday.'},
+      {en:'car',zh:'汽車',img:'🚗',sentence:'My dad drives a car.'},
+      {en:'bus',zh:'公車',img:'🚌',sentence:'I take the bus to school.'},
+      {en:'bike',zh:'腳踏車',img:'🚲',sentence:'I ride my bike in the park.'},
+      {en:'train',zh:'火車',img:'🚂',sentence:'The train is very fast.'}
+    ]
+  },
+  {
+    id: 4,
+    name: '魔法森林',
+    icon: '🌲',
+    building: 'forest',
+    blocksNeeded: 45,
+    blockTypes: ['wood', 'grass', 'stone', 'gold'],
+    words: [
+      {en:'bird',zh:'鳥',img:'🐦',sentence:'The bird can fly.'},
+      {en:'flower',zh:'花',img:'🌸',sentence:'The flower is pretty.'},
+      {en:'green',zh:'綠色',img:'💚',sentence:'The grass is green.'},
+      {en:'happy',zh:'開心',img:'😊',sentence:'I am happy today.'},
+      {en:'jump',zh:'跳',img:'🦘',sentence:'I can jump high.'},
+      {en:'run',zh:'跑',img:'🏃',sentence:'I run very fast.'},
+      {en:'sing',zh:'唱歌',img:'🎤',sentence:'I like to sing songs.'},
+      {en:'dance',zh:'跳舞',img:'💃',sentence:'She can dance well.'},
+      {en:'swim',zh:'游泳',img:'🏊',sentence:'I swim in the pool.'},
+      {en:'fly',zh:'飛',img:'🦅',sentence:'Birds can fly in the sky.'}
+    ]
+  },
+  {
+    id: 5,
+    name: '太空基地',
+    icon: '🚀',
+    building: 'space',
+    blocksNeeded: 50,
+    blockTypes: ['stone', 'glass', 'gold', 'brick'],
+    words: [
+      {en:'star',zh:'星星',img:'⭐',sentence:'I can see many stars at night.'},
+      {en:'moon',zh:'月亮',img:'🌙',sentence:'The moon is round.'},
+      {en:'rocket',zh:'火箭',img:'🚀',sentence:'The rocket goes to space.'},
+      {en:'planet',zh:'行星',img:'🪐',sentence:'Earth is a planet.'},
+      {en:'one',zh:'一',img:'1️⃣',sentence:'I have one apple.'},
+      {en:'two',zh:'二',img:'2️⃣',sentence:'I have two hands.'},
+      {en:'three',zh:'三',img:'3️⃣',sentence:'There are three cats.'},
+      {en:'four',zh:'四',img:'4️⃣',sentence:'A dog has four legs.'},
+      {en:'five',zh:'五',img:'5️⃣',sentence:'I have five fingers.'},
+      {en:'ten',zh:'十',img:'🔟',sentence:'I can count to ten.'}
+    ]
+  }
+];
 
-    let G = { px: 12, py: 12, hp: 10, maxHp: 10, hunger: 10, maxHunger: 10, inv: {}, weapon: null, pick: null, day: 1, night: false, score: 0, world: [], mobs: [], running: false };
+// ===== 遊戲狀態 =====
+let gameState = {
+  currentLevel: 1,
+  blocks: 0,
+  stars: 0,
+  currentWordIndex: 0,
+  currentQuestionType: 0, // 0:選字 1:拼寫 2:句子 3:聽力
+  correctCount: 0,
+  wrongCount: 0,
+  buildingBlocks: [],
+  learnedWords: [],
+  levelProgress: {},
+  todayStats: {words:0, correct:0, blocks:0, startTime:Date.now()}
+};
 
-    function genWorld() {
-        G.world = [];
-        for (let y = 0; y < SIZE; y++) {
-            G.world[y] = [];
-            for (let x = 0; x < SIZE; x++) {
-                let t = 'grass', obj = null, hp = 0;
-                const r = Math.random();
-                if (r < 0.05) t = 'water';
-                else if (r < 0.1) t = 'sand';
-                else if (r < 0.22) {
-                    t = 'stone';
-                    const o = Math.random();
-                    if (o < 0.08) { t = 'diamond-ore'; hp = 5; }
-                    else if (o < 0.2) { t = 'gold-ore'; hp = 4; }
-                    else if (o < 0.4) { t = 'iron-ore'; hp = 3; }
-                    else if (o < 0.65) { t = 'coal-ore'; hp = 2; }
-                    else hp = 2;
-                } else {
-                    const o = Math.random();
-                    if (o < 0.12) { obj = 'tree'; hp = 3; }
-                    else if (o < 0.18) { obj = 'rock'; hp = 2; }
-                }
-                G.world[y][x] = { t, obj, hp };
-            }
-        }
-        G.world[12][12] = { t: 'grass', obj: null, hp: 0 };
+// 載入存檔
+function loadGame() {
+  const saved = localStorage.getItem('minecraft_english_save');
+  if (saved) {
+    const data = JSON.parse(saved);
+    gameState = {...gameState, ...data};
+  }
+}
+
+// 儲存遊戲
+function saveGame() {
+  localStorage.setItem('minecraft_english_save', JSON.stringify(gameState));
+}
+
+// ===== 開始遊戲 =====
+function startGame() {
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('gameContainer').classList.add('active');
+  document.getElementById('bottomNav').style.display = 'flex';
+  loadGame();
+  initLevel(gameState.currentLevel);
+  updateUI();
+}
+
+// ===== 初始化關卡 =====
+function initLevel(levelId) {
+  gameState.currentLevel = levelId;
+  gameState.currentWordIndex = 0;
+  const level = LEVELS.find(l => l.id === levelId);
+  
+  if (!gameState.levelProgress[levelId]) {
+    gameState.levelProgress[levelId] = {blocks: 0, completed: false};
+  }
+  
+  document.getElementById('levelBadge').textContent = `第${levelId}關：${level.name}`;
+  document.getElementById('buildingTitle').textContent = `${level.icon} ${level.name} (${gameState.levelProgress[levelId].blocks}/${level.blocksNeeded})`;
+  
+  initBuildingGrid(level);
+  nextQuestion();
+  saveGame();
+}
+
+// ===== 建築網格 =====
+function initBuildingGrid(level) {
+  const grid = document.getElementById('buildingGrid');
+  grid.innerHTML = '';
+  
+  const totalBlocks = level.blocksNeeded;
+  const filledBlocks = gameState.levelProgress[level.id]?.blocks || 0;
+  
+  for (let i = 0; i < totalBlocks; i++) {
+    const block = document.createElement('div');
+    block.className = 'block';
+    
+    if (i < filledBlocks) {
+      const blockType = level.blockTypes[i % level.blockTypes.length];
+      block.classList.add('filled', blockType);
+    } else {
+      block.classList.add('empty');
     }
+    
+    grid.appendChild(block);
+  }
+  
+  const progress = (filledBlocks / totalBlocks) * 100;
+  document.getElementById('progressFill').style.width = progress + '%';
+  document.getElementById('progressText').textContent = 
+    filledBlocks >= totalBlocks ? '🎉 建築完成！' : `還需要 ${totalBlocks - filledBlocks} 塊積木`;
+}
 
-    function render() {
-        const map = document.getElementById('worldMap');
-        map.innerHTML = '';
-        map.style.width = SIZE * TILE + 'px';
-        map.style.height = SIZE * TILE + 'px';
-        for (let y = 0; y < SIZE; y++) {
-            for (let x = 0; x < SIZE; x++) {
-                const c = G.world[y][x];
-                const d = document.createElement('div');
-                d.className = 'tile ' + c.t;
-                d.style.left = x * TILE + 'px';
-                d.style.top = y * TILE + 'px';
-                if (c.obj === 'tree') d.innerHTML = '🌲';
-                else if (c.obj === 'rock') d.innerHTML = '🪨';
-                else if (c.t === 'coal-ore') d.innerHTML = '⬛';
-                else if (c.t === 'iron-ore') d.innerHTML = '🔩';
-                else if (c.t === 'gold-ore') d.innerHTML = '🥇';
-                else if (c.t === 'diamond-ore') d.innerHTML = '💎';
-                else if (c.t === 'water') d.innerHTML = '🌊';
-                d.onclick = () => interact(x, y);
-                map.appendChild(d);
-            }
-        }
-        renderMobs();
-        updateCam();
+// ===== 下一題 =====
+function nextQuestion() {
+  document.getElementById('resultOverlay').classList.remove('show');
+  
+  const level = LEVELS.find(l => l.id === gameState.currentLevel);
+  const words = level.words;
+  
+  // 隨機選一個單字
+  const wordIndex = Math.floor(Math.random() * words.length);
+  const word = words[wordIndex];
+  
+  // 輪流不同題型
+  gameState.currentQuestionType = (gameState.currentQuestionType + 1) % 4;
+  
+  generateQuestion(word, gameState.currentQuestionType);
+}
+
+// ===== 生成題目 =====
+function generateQuestion(word, type) {
+  const questionArea = document.getElementById('questionArea');
+  const typeEl = document.getElementById('questionType');
+  const wordEl = document.getElementById('questionWord');
+  const textEl = document.getElementById('questionText');
+  const hintEl = document.getElementById('questionHint');
+  const sentenceEl = document.getElementById('questionSentence');
+  const optionsEl = document.getElementById('optionsArea');
+  const spellEl = document.getElementById('spellInput');
+  const keyboardEl = document.getElementById('keyboard');
+  const listenEl = document.getElementById('listenBtn');
+  
+  // 隱藏所有輸入區
+  optionsEl.style.display = 'none';
+  spellEl.style.display = 'none';
+  keyboardEl.style.display = 'none';
+  listenEl.style.display = 'none';
+  
+  // 儲存當前單字
+  questionArea.dataset.answer = word.en;
+  questionArea.dataset.word = JSON.stringify(word);
+  
+  switch(type) {
+    case 0: // 看圖選字
+      typeEl.className = 'question-type vocab';
+      typeEl.textContent = '👀 看圖選字';
+      wordEl.textContent = word.img;
+      wordEl.style.display = 'block';
+      textEl.textContent = '這是什麼？';
+      hintEl.textContent = `提示：${word.zh}`;
+      sentenceEl.textContent = '';
+      generateOptions(word, 'en');
+      optionsEl.style.display = 'grid';
+      break;
+      
+    case 1: // 拼寫
+      typeEl.className = 'question-type spell';
+      typeEl.textContent = '✏️ 拼寫單字';
+      wordEl.textContent = word.img;
+      wordEl.style.display = 'block';
+      textEl.textContent = `請拼出「${word.zh}」`;
+      hintEl.textContent = `${word.en.length} 個字母`;
+      sentenceEl.textContent = '';
+      generateSpellInput(word);
+      spellEl.style.display = 'flex';
+      keyboardEl.style.display = 'flex';
+      break;
+      
+    case 2: // 句子配對
+      typeEl.className = 'question-type read';
+      typeEl.textContent = '📖 句子配對';
+      wordEl.style.display = 'none';
+      textEl.textContent = word.sentence.replace(word.en, '_____');
+      hintEl.textContent = `提示：${word.zh}`;
+      sentenceEl.textContent = '';
+      generateOptions(word, 'en');
+      optionsEl.style.display = 'grid';
+      break;
+      
+    case 3: // 聽力
+      typeEl.className = 'question-type listen';
+      typeEl.textContent = '🔊 聽音選字';
+      wordEl.style.display = 'none';
+      textEl.textContent = '聽發音，選出正確的單字';
+      hintEl.textContent = '';
+      sentenceEl.textContent = '';
+      listenEl.style.display = 'block';
+      listenEl.onclick = () => speak(word.en);
+      generateOptions(word, 'both');
+      optionsEl.style.display = 'grid';
+      // 自動播放一次
+      setTimeout(() => speak(word.en), 500);
+      break;
+  }
+}
+
+// ===== 生成選項 =====
+function generateOptions(correctWord, displayType) {
+  const optionsEl = document.getElementById('optionsArea');
+  optionsEl.innerHTML = '';
+  
+  const level = LEVELS.find(l => l.id === gameState.currentLevel);
+  const allWords = level.words.filter(w => w.en !== correctWord.en);
+  
+  // 隨機選3個錯誤選項
+  const shuffled = allWords.sort(() => Math.random() - 0.5);
+  const wrongOptions = shuffled.slice(0, 3);
+  
+  // 合併並打亂
+  const options = [correctWord, ...wrongOptions].sort(() => Math.random() - 0.5);
+  
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    
+    if (displayType === 'en') {
+      btn.textContent = opt.en;
+    } else if (displayType === 'zh') {
+      btn.textContent = opt.zh;
+    } else {
+      btn.textContent = `${opt.en} (${opt.zh})`;
     }
+    
+    btn.onclick = () => checkAnswer(opt.en, correctWord.en, btn);
+    optionsEl.appendChild(btn);
+  });
+}
 
-    function renderMobs() {
-        document.querySelectorAll('.entity').forEach(e => e.remove());
-        const map = document.getElementById('worldMap');
-        G.mobs.forEach((m, i) => {
-            const d = document.createElement('div');
-            d.className = 'entity';
-            d.style.left = m.x * TILE + 'px';
-            d.style.top = m.y * TILE + 'px';
-            d.innerHTML = `<div class="entity-hp"><div class="entity-hp-fill" style="width:${(m.hp/m.maxHp)*100}%"></div></div>${m.i}`;
-            d.onclick = () => attackMob(i);
-            map.appendChild(d);
-        });
+// ===== 拼寫輸入 =====
+function generateSpellInput(word) {
+  const spellEl = document.getElementById('spellInput');
+  const keyboardEl = document.getElementById('keyboard');
+  spellEl.innerHTML = '';
+  
+  // 建立輸入框
+  for (let i = 0; i < word.en.length; i++) {
+    const input = document.createElement('input');
+    input.className = 'spell-box';
+    input.maxLength = 1;
+    input.dataset.index = i;
+    input.readOnly = true;
+    spellEl.appendChild(input);
+  }
+  
+  // 建立鍵盤
+  keyboardEl.innerHTML = '';
+  const rows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+  
+  rows.forEach((row, rowIndex) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'key-row';
+    
+    if (rowIndex === 2) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'key wide';
+      delBtn.textContent = '⌫';
+      delBtn.onclick = () => deleteLetter();
+      rowEl.appendChild(delBtn);
     }
-
-    function updateCam() {
-        const gw = document.getElementById('gameWorld');
-        const map = document.getElementById('worldMap');
-        const pl = document.getElementById('player');
-        const ox = gw.clientWidth / 2 - G.px * TILE - TILE / 2;
-        const oy = gw.clientHeight / 2 - G.py * TILE - TILE / 2;
-        map.style.transform = `translate(${ox}px,${oy}px)`;
-        pl.style.left = gw.clientWidth / 2 - TILE / 2 + 'px';
-        pl.style.top = gw.clientHeight / 2 - TILE / 2 + 'px';
-    }
-
-    function renderUI() {
-        let h = ''; for (let i = 0; i < G.maxHp; i++) h += i < G.hp ? '❤️' : '🖤';
-        document.getElementById('hearts').innerHTML = h;
-        let f = ''; for (let i = 0; i < G.maxHunger; i++) f += i < G.hunger ? '🍖' : '🦴';
-        document.getElementById('foods').innerHTML = f;
-        const db = document.getElementById('dayBadge');
-        db.textContent = (G.night ? '🌙' : '☀️') + ` 第${G.day}天`;
-        db.className = 'day-badge ' + (G.night ? 'night' : 'day');
-        document.getElementById('gameWorld').className = 'game-world' + (G.night ? ' night' : '');
-        document.getElementById('score').textContent = G.score;
-        renderHotbar();
-    }
-
-    function renderHotbar() {
-        const hb = document.getElementById('hotbar');
-        hb.innerHTML = '';
-        const items = Object.entries(G.inv).slice(0, 9);
-        for (let i = 0; i < 9; i++) {
-            const s = document.createElement('div');
-            s.className = 'slot';
-            if (items[i]) {
-                const [id, qty] = items[i];
-                const it = ITEMS[id];
-                if (it) {
-                    s.innerHTML = it.i + (qty > 1 ? `<span class="qty">${qty}</span>` : '');
-                    s.onclick = () => useItem(id);
-                    if (id === G.weapon || id === G.pick) s.classList.add('selected');
-                }
-            }
-            hb.appendChild(s);
-        }
-    }
-
-    function move(dx, dy) {
-        if (!G.running) return;
-        const nx = G.px + dx, ny = G.py + dy;
-        if (nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE) return;
-        const c = G.world[ny][nx];
-        if (c.t === 'water') { toast('不能進入水中！'); return; }
-        if (c.obj) { toast('有障礙物，挖掉它！'); return; }
-        G.px = nx; G.py = ny;
-        updateCam();
-        if (Math.random() < 0.1) { G.hunger = Math.max(0, G.hunger - 1); if (G.hunger === 0) hurt(1, '餓死了'); renderUI(); }
-        checkMobHit();
-    }
-
-    function interact(x, y) {
-        if (!G.running) return;
-        const dist = Math.abs(x - G.px) + Math.abs(y - G.py);
-        if (dist > 2) { toast('太遠了！'); return; }
-        const c = G.world[y][x];
-        const pow = G.pick && ITEMS[G.pick] ? ITEMS[G.pick].pow : 1;
-        if (c.obj === 'tree') {
-            c.hp -= pow;
-            if (c.hp <= 0) { c.obj = null; addItem('wood', 2 + Math.floor(Math.random() * 2)); if (Math.random() < 0.3) addItem('apple', 1); toast('獲得木頭！'); G.score += 5; }
-            else toast(`砍樹中...(${c.hp})`);
-        } else if (c.obj === 'rock' || c.t === 'stone') {
-            c.hp -= pow;
-            if (c.hp <= 0) { c.obj = null; if (c.t !== 'grass') c.t = 'dirt'; addItem('stone', 1 + Math.floor(Math.random() * 2)); toast('獲得石頭！'); G.score += 5; }
-            else toast(`挖掘中...(${c.hp})`);
-        } else if (c.t.includes('-ore')) {
-            c.hp -= pow;
-            if (c.hp <= 0) {
-                const ore = c.t.split('-')[0];
-                c.t = 'dirt';
-                if (ore === 'coal') addItem('coal', 1 + Math.floor(Math.random() * 2));
-                else if (ore === 'iron') addItem('iron', 1);
-                else if (ore === 'gold') addItem('gold', 1);
-                else if (ore === 'diamond') addItem('diamond', 1);
-                toast(`獲得${ore}！`);
-                G.score += ore === 'diamond' ? 50 : ore === 'gold' ? 30 : 10;
-            } else toast(`挖礦中...(${c.hp})`);
-        }
-        render(); renderUI();
-    }
-
-    function addItem(id, n = 1) { G.inv[id] = (G.inv[id] || 0) + n; renderHotbar(); }
-    function removeItem(id, n = 1) { if (G.inv[id]) { G.inv[id] -= n; if (G.inv[id] <= 0) delete G.inv[id]; } renderHotbar(); }
-    function hasItem(id, n = 1) { return (G.inv[id] || 0) >= n; }
-
-    function useItem(id) {
-        const it = ITEMS[id];
-        if (!it) return;
-        if (id === 'meat' || id === 'apple') {
-            if (G.hunger < G.maxHunger) {
-                G.hunger = Math.min(G.maxHunger, G.hunger + (id === 'meat' ? 4 : 2));
-                removeItem(id, 1); toast(`吃了${it.n}！`); renderUI();
-            } else toast('你不餓！');
-            return;
-        }
-        if (it.dmg) { G.weapon = id; toast(`裝備${it.n}！攻擊+${it.dmg}`); renderHotbar(); return; }
-        if (it.pow) { G.pick = id; toast(`裝備${it.n}！挖礦+${it.pow}`); renderHotbar(); return; }
-    }
-
-    function openCraft() {
-        const list = document.getElementById('recipeList');
-        list.innerHTML = '';
-        RECIPES.forEach(r => {
-            const can = Object.entries(r.c).every(([i, n]) => hasItem(i, n));
-            const d = document.createElement('div');
-            d.className = 'recipe' + (can ? '' : ' disabled');
-            const cost = Object.entries(r.c).map(([i, n]) => `${ITEMS[i].i}×${n}`).join(' ');
-            d.innerHTML = `<div class="recipe-info"><span class="recipe-icon">${r.i}</span><div><div class="recipe-name">${r.n}</div><div class="recipe-cost">${cost} | ${r.d}</div></div></div>${can ? '<button class="recipe-btn">合成</button>' : ''}`;
-            if (can) d.onclick = () => craft(r);
-            list.appendChild(d);
-        });
-        document.getElementById('craftModal').classList.add('show');
-    }
-    function closeCraft() { document.getElementById('craftModal').classList.remove('show'); }
-    function craft(r) {
-        Object.entries(r.c).forEach(([i, n]) => removeItem(i, n));
-        addItem(r.r, 1); toast(`合成了${r.n}！`); G.score += 20; openCraft(); renderUI();
-    }
-
-    function spawnMob() {
-        if (!G.night || G.mobs.length >= 6) return;
-        if (Math.random() > 0.25) return;
-        const type = MOBS[Math.floor(Math.random() * MOBS.length)];
-        let x, y, tries = 0;
-        do {
-            x = G.px + Math.floor(Math.random() * 12) - 6;
-            y = G.py + Math.floor(Math.random() * 12) - 6;
-            tries++;
-        } while ((x < 0 || x >= SIZE || y < 0 || y >= SIZE || G.world[y][x].t === 'water' || G.world[y][x].obj || (Math.abs(x - G.px) < 3 && Math.abs(y - G.py) < 3)) && tries < 20);
-        if (tries < 20) { G.mobs.push({ ...type, x, y, maxHp: type.hp }); renderMobs(); }
-    }
-
-    function moveMobs() {
-        G.mobs.forEach(m => {
-            if (Math.random() < 0.5) {
-                const dx = Math.sign(G.px - m.x), dy = Math.sign(G.py - m.y);
-                const nx = m.x + (Math.random() < 0.5 ? dx : 0);
-                const ny = m.y + (Math.random() < 0.5 ? dy : 0);
-                if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && G.world[ny][nx].t !== 'water' && !G.world[ny][nx].obj) { m.x = nx; m.y = ny; }
-            }
-        });
-        renderMobs(); checkMobHit();
-    }
-
-    function checkMobHit() { G.mobs.forEach(m => { if (m.x === G.px && m.y === G.py) hurt(m.dmg, `被${m.n}攻擊了`); }); }
-
-    function attackNearest() {
-        if (!G.running) return;
-        let hit = false;
-        G.mobs.forEach((m, i) => { if (Math.abs(m.x - G.px) + Math.abs(m.y - G.py) <= 1) { attackMob(i); hit = true; } });
-        if (!hit) toast('附近沒有怪物！');
-    }
-
-    function attackMob(i) {
-        const m = G.mobs[i]; if (!m) return;
-        if (Math.abs(m.x - G.px) + Math.abs(m.y - G.py) > 2) { toast('太遠了！'); return; }
-        const dmg = G.weapon && ITEMS[G.weapon] ? ITEMS[G.weapon].dmg : 1;
-        m.hp -= dmg; toast(`對${m.n}造成${dmg}傷害！`);
-        if (m.hp <= 0) { if (Math.random() < 0.5) addItem('meat', 1); G.mobs.splice(i, 1); G.score += 30; toast(`擊敗${m.n}！`); }
-        renderMobs(); renderUI();
-    }
-
-    function hurt(n, reason) { G.hp -= n; toast(`受到${n}傷害！`); renderUI(); if (G.hp <= 0) gameOver(reason); }
-    function gameOver(reason) { document.getElementById('deathMsg').textContent = reason; document.getElementById('gameoverScreen').classList.add('show'); G.running = false; }
-    function restart() { document.getElementById('gameoverScreen').classList.remove('show'); init(); }
-
-    function toggleDayNight() {
-        G.night = !G.night;
-        if (!G.night) { G.day++; G.mobs = []; }
-        renderUI(); renderMobs();
-        toast(G.night ? '夜晚來臨，小心怪物！' : `第${G.day}天開始了！`);
-    }
-
-    function toast(msg) {
-        const t = document.getElementById('toast');
-        t.textContent = msg; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
-    }
-
-    document.addEventListener('keydown', e => {
-        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') move(0, -1);
-        else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') move(0, 1);
-        else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') move(-1, 0);
-        else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') move(1, 0);
-        else if (e.key === ' ') attackNearest();
-        else if (e.key === 'e' || e.key === 'E') openCraft();
-        else if (e.key === 'Escape') closeCraft();
+    
+    row.split('').forEach(letter => {
+      const key = document.createElement('button');
+      key.className = 'key';
+      key.textContent = letter.toUpperCase();
+      key.onclick = () => inputLetter(letter);
+      rowEl.appendChild(key);
     });
-
-    function init() {
-        G = { px: 12, py: 12, hp: 10, maxHp: 10, hunger: 10, maxHunger: 10, inv: { wood: 3 }, weapon: null, pick: null, day: 1, night: false, score: 0, world: [], mobs: [], running: true };
-        genWorld(); render(); renderUI();
+    
+    if (rowIndex === 2) {
+      const enterBtn = document.createElement('button');
+      enterBtn.className = 'key wide enter';
+      enterBtn.textContent = '確定';
+      enterBtn.onclick = () => checkSpelling();
+      rowEl.appendChild(enterBtn);
     }
+    
+    keyboardEl.appendChild(rowEl);
+  });
+}
 
-    function startGame() {
-        document.getElementById('startScreen').classList.add('hidden');
-        init();
-        toast('歡迎！先收集木頭製作工具吧！');
-        setInterval(() => { if (G.running) { moveMobs(); spawnMob(); } }, 1800);
-        setInterval(() => { if (G.running) toggleDayNight(); }, 45000);
+let currentSpellIndex = 0;
+
+function inputLetter(letter) {
+  const inputs = document.querySelectorAll('.spell-box');
+  if (currentSpellIndex < inputs.length) {
+    inputs[currentSpellIndex].value = letter.toUpperCase();
+    currentSpellIndex++;
+  }
+}
+
+function deleteLetter() {
+  if (currentSpellIndex > 0) {
+    currentSpellIndex--;
+    const inputs = document.querySelectorAll('.spell-box');
+    inputs[currentSpellIndex].value = '';
+  }
+}
+
+function checkSpelling() {
+  const inputs = document.querySelectorAll('.spell-box');
+  const answer = document.getElementById('questionArea').dataset.answer;
+  let userAnswer = '';
+  
+  inputs.forEach(input => {
+    userAnswer += input.value.toLowerCase();
+  });
+  
+  const isCorrect = userAnswer === answer.toLowerCase();
+  
+  inputs.forEach((input, i) => {
+    if (input.value.toLowerCase() === answer[i].toLowerCase()) {
+      input.classList.add('correct');
+    } else {
+      input.classList.add('wrong');
     }
+  });
+  
+  setTimeout(() => {
+    showResult(isCorrect, answer);
+    currentSpellIndex = 0;
+  }, 500);
+}
 
-    renderUI();
+// ===== 檢查答案 =====
+function checkAnswer(selected, correct, btnEl) {
+  const isCorrect = selected === correct;
+  
+  if (isCorrect) {
+    btnEl.classList.add('correct');
+  } else {
+    btnEl.classList.add('wrong');
+    // 顯示正確答案
+    document.querySelectorAll('.option-btn').forEach(btn => {
+      if (btn.textContent.includes(correct)) {
+        btn.classList.add('correct');
+      }
+    });
+  }
+  
+  setTimeout(() => showResult(isCorrect, correct), 600);
+}
+
+// ===== 顯示結果 =====
+function showResult(isCorrect, answer) {
+  const overlay = document.getElementById('resultOverlay');
+  const icon = document.getElementById('resultIcon');
+  const text = document.getElementById('resultText');
+  const detail = document.getElementById('resultDetail');
+  const btn = document.getElementById('resultBtn');
+  
+  const word = JSON.parse(document.getElementById('questionArea').dataset.word);
+  
+  if (isCorrect) {
+    icon.textContent = '🎉';
+    text.textContent = '答對了！';
+    detail.innerHTML = `<b>${word.en}</b> = ${word.zh}<br>+1 🧱 積木`;
+    btn.className = 'result-btn next';
+    btn.textContent = '下一題';
+    
+    // 增加積木
+    gameState.blocks++;
+    const level = LEVELS.find(l => l.id === gameState.currentLevel);
+    gameState.levelProgress[level.id].blocks++;
+    gameState.todayStats.blocks++;
+    gameState.todayStats.correct++;
+    
+    // 記錄學過的單字
+    if (!gameState.learnedWords.includes(word.en)) {
+      gameState.learnedWords.push(word.en);
+      gameState.todayStats.words++;
+    }
+    
+    // 更新建築
+    updateBuilding();
+    
+    // 檢查是否完成關卡
+    if (gameState.levelProgress[level.id].blocks >= level.blocksNeeded) {
+      gameState.levelProgress[level.id].completed = true;
+      gameState.stars += 3;
+      showAchievement(`🏆 完成「${level.name}」！`);
+    }
+    
+  } else {
+    icon.textContent = '😢';
+    text.textContent = '再試一次！';
+    detail.innerHTML = `正確答案：<b>${word.en}</b> = ${word.zh}<br>${word.sentence}`;
+    btn.className = 'result-btn retry';
+    btn.textContent = '繼續加油';
+    gameState.wrongCount++;
+  }
+  
+  updateUI();
+  saveGame();
+  overlay.classList.add('show');
+}
+
+// ===== 更新建築 =====
+function updateBuilding() {
+  const level = LEVELS.find(l => l.id === gameState.currentLevel);
+  const blocks = gameState.levelProgress[level.id].blocks;
+  
+  document.getElementById('buildingTitle').textContent = 
+    `${level.icon} ${level.name} (${blocks}/${level.blocksNeeded})`;
+  
+  // 填充新積木
+  const grid = document.getElementById('buildingGrid');
+  const blockEls = grid.querySelectorAll('.block');
+  
+  if (blocks <= blockEls.length && blocks > 0) {
+    const newBlock = blockEls[blocks - 1];
+    const blockType = level.blockTypes[(blocks - 1) % level.blockTypes.length];
+    newBlock.className = 'block filled ' + blockType;
+  }
+  
+  const progress = (blocks / level.blocksNeeded) * 100;
+  document.getElementById('progressFill').style.width = progress + '%';
+  document.getElementById('progressText').textContent = 
+    blocks >= level.blocksNeeded ? '🎉 建築完成！' : `還需要 ${level.blocksNeeded - blocks} 塊積木`;
+}
+
+// ===== 更新UI =====
+function updateUI() {
+  document.getElementById('blocksCount').textContent = gameState.blocks;
+  document.getElementById('starsCount').textContent = gameState.stars;
+  
+  if (document.getElementById('blocksCount2')) {
+    document.getElementById('blocksCount2').textContent = gameState.blocks;
+    document.getElementById('starsCount2').textContent = gameState.stars;
+  }
+}
+
+// ===== 語音播放 =====
+function speak(text) {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.8;
+    speechSynthesis.speak(utterance);
+    
+    const btn = document.getElementById('listenBtn');
+    btn.classList.add('playing');
+    utterance.onend = () => btn.classList.remove('playing');
+  }
+}
+
+// ===== 成就提示 =====
+function showAchievement(text) {
+  const container = document.getElementById('achievements');
+  const popup = document.createElement('div');
+  popup.className = 'achievement-popup';
+  popup.textContent = text;
+  container.appendChild(popup);
+  
+  setTimeout(() => popup.remove(), 3000);
+}
+
+// ===== 頁面切換 =====
+function showPage(page) {
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.closest('.nav-btn').classList.add('active');
+  
+  document.getElementById('gameContainer').classList.remove('active');
+  document.getElementById('levelSelect').classList.remove('active');
+  document.getElementById('statsPage').classList.remove('active');
+  document.getElementById('wordbook').classList.remove('active');
+  
+  switch(page) {
+    case 'game':
+      document.getElementById('gameContainer').classList.add('active');
+      break;
+    case 'levels':
+      document.getElementById('levelSelect').classList.add('active');
+      renderLevels();
+      break;
+    case 'wordbook':
+      document.getElementById('wordbook').classList.add('active');
+      renderWordbook();
+      break;
+    case 'stats':
+      document.getElementById('statsPage').classList.add('active');
+      renderStats();
+      break;
+  }
+}
+
+// ===== 渲染關卡選擇 =====
+function renderLevels() {
+  const grid = document.getElementById('levelGrid');
+  grid.innerHTML = '';
+  
+  LEVELS.forEach((level, index) => {
+    const card = document.createElement('div');
+    card.className = 'level-card';
+    
+    const isUnlocked = index === 0 || gameState.levelProgress[LEVELS[index-1].id]?.completed;
+    const isCompleted = gameState.levelProgress[level.id]?.completed;
+    
+    if (!isUnlocked) card.classList.add('locked');
+    if (isCompleted) card.classList.add('completed');
+    
+    card.innerHTML = `
+      <div class="level-num">${level.icon}</div>
+      <div class="level-name">第${level.id}關：${level.name}</div>
+      <div class="level-desc">${level.words.length}個單字 · ${level.blocksNeeded}塊積木</div>
+    `;
+    
+    if (isUnlocked) {
+      card.onclick = () => {
+        showPage('game');
+        document.querySelector('.nav-btn').classList.add('active');
+        initLevel(level.id);
+      };
+    }
+    
+    grid.appendChild(card);
+  });
+}
+
+// ===== 渲染單字本 =====
+function renderWordbook() {
+  const list = document.getElementById('wordList');
+  list.innerHTML = '';
+  
+  if (gameState.learnedWords.length === 0) {
+    list.innerHTML = '<div style="color:#fff;text-align:center;padding:50px">還沒有學習任何單字<br>開始遊戲吧！</div>';
+    return;
+  }
+  
+  // 找出所有學過的單字
+  LEVELS.forEach(level => {
+    level.words.forEach(word => {
+      if (gameState.learnedWords.includes(word.en)) {
+        const item = document.createElement('div');
+        item.className = 'word-item';
+        item.innerHTML = `
+          <div class="word-en">${word.img} ${word.en}</div>
+          <div class="word-zh">${word.zh}</div>
+          <div class="word-sentence">${word.sentence}</div>
+        `;
+        item.onclick = () => speak(word.en);
+        list.appendChild(item);
+      }
+    });
+  });
+}
+
+// ===== 渲染統計 =====
+function renderStats() {
+  const minutes = Math.floor((Date.now() - gameState.todayStats.startTime) / 60000);
+  
+  document.getElementById('todayWords').textContent = gameState.todayStats.words;
+  document.getElementById('todayCorrect').textContent = gameState.todayStats.correct;
+  document.getElementById('todayBlocks').textContent = gameState.todayStats.blocks;
+  document.getElementById('todayTime').textContent = minutes;
+  
+  document.getElementById('totalWords').textContent = gameState.learnedWords.length;
+  document.getElementById('totalStars').textContent = gameState.stars;
+  
+  let completedBuildings = 0;
+  Object.values(gameState.levelProgress).forEach(p => {
+    if (p.completed) completedBuildings++;
+  });
+  document.getElementById('totalBuildings').textContent = completedBuildings;
+  document.getElementById('totalDays').textContent = 1; // 簡化版
+}
+
+// ===== 初始化 =====
+loadGame();
 </script>
-```
 
 </body>
 </html>
