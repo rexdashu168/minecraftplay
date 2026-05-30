@@ -1877,39 +1877,58 @@ function hitTest(x,y){
   }
   return null;
 }
-function setBtnState(btn,on){
-  if(!btn) return;
-  if(on){ btn.el.classList.add('pressed'); btn.on(); }
-  else  { btn.el.classList.remove('pressed'); btn.off(); }
+function setBtnVisual(id,on){
+  for(var i=0;i<touchBtns.length;i++){
+    if(touchBtns[i].id===id){
+      if(on) touchBtns[i].el.classList.add('pressed');
+      else touchBtns[i].el.classList.remove('pressed');
+      return;
+    }
+  }
 }
 function releaseAllTouch(){
-  for(var i=0;i<touchBtns.length;i++) setBtnState(touchBtns[i],false);
   activePointers={};
+  applyButtonStates({});
 }
 function bindHold(id,on,off){
   var el=document.getElementById(id);
   if(!el) return;
-  touchBtns.push({id:id,el:el,on:on,off:off});
+  touchBtns.push({id:id,el:el});
+}
+// 目前哪些鍵被壓著（上一幀狀態），用來偵測「新壓下」
+var btnDown={left:false,right:false,run:false,jump:false};
+function applyButtonStates(want){
+  // 左右移動 + 衝刺：持續狀態，直接反映
+  keys.left  = !!want.btnLeft;
+  keys.right = !!want.btnRight;
+  keys.run   = !!want.btnRun;
+  // 跳躍：按住狀態給 jumpHeld；只有「這一刻新壓下」才觸發起跳緩衝
+  var jumpNow = !!want.btnJump;
+  if(jumpNow && !btnDown.jump){
+    jumpJustPressed=true;
+    if(player) player.jumpBuf=JUMP_BUFFER; // 直接灌緩衝，支援空中預輸入
+  }
+  jumpHeld = jumpNow;
+  keys.jump = jumpNow;
+  btnDown.jump = jumpNow;
+  // 視覺
+  setBtnVisual('btnLeft',  keys.left);
+  setBtnVisual('btnRight', keys.right);
+  setBtnVisual('btnRun',   keys.run);
+  setBtnVisual('btnJump',  jumpNow);
 }
 function recomputePressed(){
-  // 依目前所有手指所在位置，重算每個鍵該不該按下
+  // 依目前所有手指所在位置，算出每個鍵該不該按下
   var want={};
   for(var pid in activePointers){
     var bid=activePointers[pid];
     if(bid) want[bid]=true;
   }
-  for(var i=0;i<touchBtns.length;i++){
-    var b=touchBtns[i];
-    setBtnState(b, !!want[b.id]);
-  }
+  applyButtonStates(want);
 }
 
 function setupInput(){
-  bindHold('btnLeft', function(){keys.left=true;}, function(){keys.left=false;});
-  bindHold('btnRight',function(){keys.right=true;},function(){keys.right=false;});
-  bindHold('btnRun',  function(){keys.run=true;}, function(){keys.run=false;});
-  bindHold('btnJump', function(){ keys.jump=true; jumpHeld=true; jumpJustPressed=true; },
-                      function(){ keys.jump=false; jumpHeld=false; });
+  bindHold('btnLeft'); bindHold('btnRight'); bindHold('btnRun'); bindHold('btnJump');
 
   var supportsPointer = ('PointerEvent' in window);
 
@@ -1921,44 +1940,44 @@ function setupInput(){
     },{passive:false});
     window.addEventListener('pointermove',function(e){
       if(state!=='play') return;
-      if(!(e.pointerId in activePointers)) return; // 只追蹤已按下的手指
-      e.preventDefault();
+      if(!(e.pointerId in activePointers)) return;
       var b=hitTest(e.clientX,e.clientY);
-      activePointers[e.pointerId]= b? b.id : null; // 滑出按鍵→該指放開
-      recomputePressed();
+      var newId = b? b.id : null;
+      if(activePointers[e.pointerId]!==newId){ // 只有真的換了鍵才重算
+        e.preventDefault();
+        activePointers[e.pointerId]=newId;
+        recomputePressed();
+      }
     },{passive:false});
     function ptrEnd(e){
       if(e.pointerId in activePointers){ delete activePointers[e.pointerId]; recomputePressed(); }
     }
     window.addEventListener('pointerup',ptrEnd,{passive:false});
     window.addEventListener('pointercancel',ptrEnd,{passive:false});
-    window.addEventListener('pointerleave',ptrEnd,{passive:false});
   }else{
     // 後備：舊版 touch 事件
     function handle(e){
       if(state!=='play') return;
       e.preventDefault();
-      var live={};
+      activePointers={};
+      var n=0;
       for(var i=0;i<e.touches.length;i++){
         var t=e.touches[i], b=hitTest(t.clientX,t.clientY);
-        if(b) live[b.id]=true;
+        if(b) activePointers['t'+(n++)]=b.id;
       }
-      activePointers={};
-      var n=0; for(var k in live){ activePointers['t'+(n++)]=k; }
       recomputePressed();
     }
     document.addEventListener('touchstart',handle,{passive:false});
     document.addEventListener('touchmove',handle,{passive:false});
     document.addEventListener('touchend',handle,{passive:false});
     document.addEventListener('touchcancel',handle,{passive:false});
-    // 滑鼠後備（桌機）
     var mouseBtn=null;
     document.addEventListener('mousedown',function(e){
       if(state!=='play') return;
       var b=hitTest(e.clientX,e.clientY);
-      if(b){ mouseBtn=b; setBtnState(b,true); }
+      if(b){ mouseBtn=b.id; activePointers['mouse']=b.id; recomputePressed(); }
     });
-    document.addEventListener('mouseup',function(){ if(mouseBtn){ setBtnState(mouseBtn,false); mouseBtn=null; } });
+    document.addEventListener('mouseup',function(){ if(mouseBtn){ delete activePointers['mouse']; mouseBtn=null; recomputePressed(); } });
   }
 
   // 失焦／切到背景時全部放開，避免卡鍵
