@@ -1,1536 +1,2028 @@
 <!DOCTYPE html>
-
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>小蛹英文冒險</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>🍄 波比冒險島</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:'Arial',sans-serif;user-select:none}
-body{background:#0d1117;color:#fff;min-height:100vh;overflow-x:hidden}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;font-family:'Trebuchet MS','Segoe UI',sans-serif;position:fixed;touch-action:none;}
+#game{position:absolute;top:0;left:0;width:100%;height:100%;}
+canvas{display:block;width:100%;height:100%;}
 
-/* ── 畫面系統 ── */
-.pg{display:none;min-height:100vh}
-.pg.on{display:flex;flex-direction:column}
+#controls{position:absolute;bottom:0;left:0;width:100%;height:0;z-index:20;pointer-events:none;}
+.btn{position:absolute;pointer-events:auto;display:flex;align-items:center;justify-content:center;
+  font-weight:900;color:#fff;border:none;touch-action:none;transition:transform .05s,filter .05s;}
+.btn:active,.btn.pressed{transform:scale(0.94);filter:brightness(1.35);}
+.dpad{bottom:max(24px,env(safe-area-inset-bottom));width:96px;height:104px;font-size:2.8rem;
+  background:linear-gradient(145deg,#3a4a6b,#28344d);box-shadow:0 5px 0 #1a2233,0 8px 14px rgba(0,0,0,.4);
+  border:3px solid rgba(255,255,255,.18);}
+#btnLeft{left:18px;border-radius:22px 8px 8px 22px;}
+#btnRight{left:116px;border-radius:8px 22px 22px 8px;}
+#btnJump{right:20px;bottom:max(24px,env(safe-area-inset-bottom));width:104px;height:104px;border-radius:50%;font-size:1.5rem;
+  background:radial-gradient(circle at 35% 30%,#ff8a5c,#e8472e);box-shadow:0 5px 0 #a5301d,0 8px 16px rgba(0,0,0,.45);
+  border:3px solid rgba(255,255,255,.25);}
+#btnRun{right:136px;bottom:calc(max(24px,env(safe-area-inset-bottom)) + 44px);width:72px;height:72px;border-radius:50%;font-size:.95rem;
+  background:radial-gradient(circle at 35% 30%,#ffd166,#f0a500);box-shadow:0 4px 0 #b87900,0 7px 13px rgba(0,0,0,.4);
+  border:3px solid rgba(255,255,255,.25);color:#5a3a00;}
 
-/* ── 標題畫面 ── */
-#pgTitle{
-background:linear-gradient(180deg,#060d1f 0%,#0d2a5e 40%,#1a5c1a 75%,#0d3d0d 100%);
-align-items:center;justify-content:center;text-align:center;padding:30px 20px;
-position:relative;overflow:hidden
-}
-.t-stars{position:absolute;top:0;left:0;width:100%;height:55%;pointer-events:none}
-.t-star{position:absolute;background:#fff;border-radius:50%}
-.t-logo{font-size:80px;margin-bottom:8px;position:relative;z-index:1;
-animation:logoBob 2s ease-in-out infinite}
-@keyframes logoBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
-.t-title{font-size:26px;font-weight:900;color:#fff;
-text-shadow:3px 3px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;
-letter-spacing:2px;position:relative;z-index:1}
-.t-sub{color:#ffd700;font-size:14px;margin:6px 0 28px;position:relative;z-index:1}
-.t-profile{background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.2);
-border-radius:20px;padding:22px 30px;cursor:pointer;transition:all 0.2s;
-position:relative;z-index:1;min-width:180px}
-.t-profile:active{transform:scale(0.96)}
-.t-avatar{font-size:52px;margin-bottom:8px}
-.t-name{font-size:18px;font-weight:800}
-.t-pstats{font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px}
-.t-feats{display:flex;gap:10px;margin-top:24px;position:relative;z-index:1;flex-wrap:wrap;justify-content:center}
-.t-feat{background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.15);
-padding:8px 14px;border-radius:20px;font-size:13px;color:rgba(255,255,255,0.7)}
+#hud{position:absolute;top:0;left:0;width:100%;padding:max(10px,env(safe-area-inset-top)) 14px 0;z-index:15;display:flex;
+  justify-content:space-between;align-items:flex-start;pointer-events:none;
+  font-weight:900;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.5);}
+.hud-box{background:rgba(20,20,40,.55);border-radius:14px;padding:6px 12px;
+  border:2px solid rgba(255,255,255,.15);display:flex;gap:14px;font-size:1rem;align-items:center;}
+.hud-item{display:flex;align-items:center;gap:4px;}
 
-/* ── 主選單 ── */
-#pgHub{background:#0d1117;padding-bottom:80px;overflow-y:auto}
-.hub-top{background:linear-gradient(135deg,#111827,#1f2d45);padding:18px 18px 15px}
-.hub-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.hub-player{display:flex;align-items:center;gap:12px}
-.hub-av{width:46px;height:46px;background:linear-gradient(135deg,#22c55e,#15803d);
-border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px}
-.hub-uname{font-size:17px;font-weight:800}
-.hub-ulv{font-size:11px;color:#ffd700;margin-top:2px}
-.hub-gems{display:flex;gap:8px}
-.gem{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);
-padding:5px 11px;border-radius:16px;font-size:13px;font-weight:700}
-.streak-box{background:linear-gradient(135deg,rgba(251,146,60,0.15),rgba(239,68,68,0.1));
-border:1px solid rgba(251,146,60,0.35);border-radius:14px;padding:12px 16px;
-display:flex;align-items:center;gap:12px}
-.streak-fire{font-size:30px;animation:fFire 1s ease-in-out infinite}
-@keyframes fFire{0%,100%{transform:scale(1)}50%{transform:scale(1.12) rotate(4deg)}}
-.streak-days{font-size:20px;font-weight:900;color:#fbbf24}
-.streak-lbl{font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px}
-
-.sec{padding:16px 16px 0}
-.sec-lbl{font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);
-letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
-
-/* 今日任務卡 */
-.daily-card{background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(6,182,212,0.08));
-border:1px solid rgba(16,185,129,0.3);border-radius:18px;padding:18px;cursor:pointer;
-transition:all 0.2s}
-.daily-card:active{transform:scale(0.98)}
-.dc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.dc-title{font-size:16px;font-weight:800}
-.dc-tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;
-background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.3)}
-.dc-tag.done{background:rgba(99,102,241,0.2);color:#a78bfa;border-color:rgba(99,102,241,0.3)}
-.dc-bar-bg{height:7px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-bottom:10px}
-.dc-bar{height:100%;background:linear-gradient(90deg,#10b981,#06b6d4);border-radius:4px;transition:width 0.5s}
-.dc-meta{display:flex;gap:14px}
-.dc-meta-i{font-size:12px;color:rgba(255,255,255,0.45)}
-
-/* 世界清單 */
-.world-item{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
-border-radius:16px;padding:15px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;
-display:flex;align-items:center;gap:14px}
-.world-item:active{transform:scale(0.98)}
-.world-item.locked{opacity:0.45;cursor:not-allowed}
-.wi-icon{font-size:40px;width:54px;text-align:center;flex-shrink:0}
-.wi-info{flex:1}
-.wi-name{font-size:15px;font-weight:800;margin-bottom:3px}
-.wi-desc{font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:7px}
-.wi-pbar{height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
-.wi-pfill{height:100%;border-radius:3px;transition:width 0.5s}
-.wi-right{text-align:right;flex-shrink:0}
-.wi-stars{font-size:16px}
-.wi-lv{font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px}
-
-/* ── 底部導航 ── */
-.bnav{position:fixed;bottom:0;left:0;right:0;
-background:rgba(10,12,20,0.97);border-top:1px solid rgba(255,255,255,0.08);
-display:flex;justify-content:space-around;padding:8px 0 10px;z-index:90;
-backdrop-filter:blur(10px)}
-.bn{background:none;border:none;color:rgba(255,255,255,0.38);font-size:10px;
-font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;
-gap:3px;padding:5px 14px;border-radius:10px;transition:all 0.2s;position:relative}
-.bn.on{color:#fff;background:rgba(255,255,255,0.07)}
-.bn-ic{font-size:22px}
-.bn-badge{position:absolute;top:2px;right:6px;background:#ef4444;color:#fff;
-font-size:9px;font-weight:800;padding:1px 4px;border-radius:6px}
-
-/* ── 遊戲畫面 ── */
-#pgGame{background:#0d1117;overflow-y:auto}
-.g-topbar{background:rgba(0,0,0,0.5);padding:11px 14px;display:flex;align-items:center;
-gap:12px;position:sticky;top:0;z-index:50;backdrop-filter:blur(8px)}
-.g-back{background:rgba(255,255,255,0.1);border:none;color:#fff;width:36px;height:36px;
-border-radius:10px;font-size:17px;cursor:pointer;flex-shrink:0}
-.g-info{flex:1}
-.g-title{font-size:14px;font-weight:800}
-.g-sub{font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px}
-.g-lives{display:flex;gap:3px}
-.g-heart{font-size:20px;transition:all 0.3s}
-.g-heart.off{opacity:0.18;transform:scale(0.8)}
-
-/* 建造區 */
-.build-zone{
-background:linear-gradient(180deg,#0a1628 0%,#0a1628 55%,#14532d 55%,#0f3d1f 100%);
-min-height:140px;position:relative;overflow:hidden;padding:10px 14px 8px}
-.bz-sun{position:absolute;top:12px;right:20px;font-size:28px;
-filter:drop-shadow(0 0 10px rgba(251,191,36,0.7))}
-.bz-blocks{display:flex;align-items:flex-end;gap:2px;position:absolute;
-bottom:35%;left:50%;transform:translateX(-50%);flex-wrap:wrap;max-width:320px;justify-content:center}
-.blk{width:26px;height:26px;border-radius:3px;transition:all 0.3s;flex-shrink:0}
-.blk.empty{background:rgba(255,255,255,0.04);border:1px dashed rgba(255,255,255,0.12)}
-.blk.wood{background:#7c3f1e;border-top:2px solid #a0562a;border-left:1px solid rgba(255,255,255,0.1)}
-.blk.stone{background:#64748b;border-top:2px solid #94a3b8;border-left:1px solid rgba(255,255,255,0.1)}
-.blk.brick{background:#991b1b;border-top:2px solid #dc2626;border-left:1px solid rgba(255,255,255,0.1)}
-.blk.gold{background:#d97706;border-top:2px solid #fbbf24;border-left:1px solid rgba(255,255,255,0.15);box-shadow:0 0 6px rgba(251,191,36,0.4)}
-.blk.diamond{background:#0369a1;border-top:2px solid #38bdf8;border-left:1px solid rgba(255,255,255,0.15);box-shadow:0 0 6px rgba(56,189,248,0.4)}
-.blk.new{animation:blkDrop 0.4s cubic-bezier(0.34,1.56,0.64,1)}
-@keyframes blkDrop{from{transform:translateY(-30px) scale(0.5);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
-.bz-prog{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
-font-size:12px;font-weight:700;color:#fff;text-shadow:1px 1px 2px #000;white-space:nowrap}
-
-/* 題目卡 */
-.q-wrap{padding:12px 14px 20px}
-.q-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:18px}
-.q-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:16px;font-size:12px;font-weight:700;margin-bottom:12px}
-.q-badge.rd{background:rgba(59,130,246,0.2);color:#93c5fd;border:1px solid rgba(59,130,246,0.3)}
-.q-badge.li{background:rgba(236,72,153,0.2);color:#f9a8d4;border:1px solid rgba(236,72,153,0.3)}
-.q-badge.sp{background:rgba(245,158,11,0.2);color:#fcd34d;border:1px solid rgba(245,158,11,0.3)}
-.q-img{font-size:68px;text-align:center;margin:8px 0}
-.q-text{font-size:18px;font-weight:700;text-align:center;margin:10px 0;line-height:1.5}
-.q-hint-lbl{font-size:13px;color:rgba(255,255,255,0.4);text-align:center;margin:4px 0}
-
-/* 提示系統 */
-.hint-btn{display:block;margin:10px auto 0;background:rgba(245,158,11,0.12);
-border:1px solid rgba(245,158,11,0.35);color:#fcd34d;padding:7px 16px;
-border-radius:16px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s}
-.hint-btn:active{transform:scale(0.96)}
-.hint-box{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);
-border-radius:12px;padding:10px 14px;margin:10px 0;font-size:14px;color:#fde68a;
-text-align:center;animation:fadeUp 0.3s ease}
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-
-/* 選項 */
-.opts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
-.opt{padding:15px 10px;font-size:14px;font-weight:700;
-border:2px solid rgba(255,255,255,0.1);border-radius:14px;
-background:rgba(255,255,255,0.04);cursor:pointer;transition:all 0.2s;color:#fff;text-align:center;line-height:1.4}
-.opt:active{transform:scale(0.96)}
-.opt.ok{background:rgba(34,197,94,0.2);border-color:#22c55e;color:#86efac}
-.opt.no{background:rgba(239,68,68,0.2);border-color:#ef4444;color:#fca5a5}
-.opt.show{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.4)}
-
-/* 拼寫 */
-.spell-boxes{display:flex;justify-content:center;gap:6px;margin:12px 0;flex-wrap:wrap}
-.sbox{width:38px;height:48px;border:2px solid rgba(59,130,246,0.4);border-radius:9px;
-font-size:20px;font-weight:800;text-align:center;line-height:48px;
-background:rgba(59,130,246,0.07);color:#fff;transition:all 0.2s}
-.sbox.has{border-color:rgba(34,197,94,0.5);background:rgba(34,197,94,0.08)}
-.sbox.bad{border-color:rgba(239,68,68,0.6);background:rgba(239,68,68,0.1)}
-.kb{display:flex;flex-direction:column;gap:5px;margin-top:10px}
-.kb-row{display:flex;justify-content:center;gap:4px}
-.kk{min-width:27px;height:40px;border:none;border-radius:7px;font-size:14px;font-weight:800;
-cursor:pointer;background:rgba(255,255,255,0.1);color:#fff;
-border-bottom:3px solid rgba(0,0,0,0.5);transition:all 0.1s;padding:0 3px}
-.kk:active{transform:translateY(2px);border-bottom-width:1px}
-.kk.kdel{background:rgba(239,68,68,0.25);border-bottom-color:rgba(239,68,68,0.4);font-size:12px;min-width:42px}
-.kk.kok{background:rgba(34,197,94,0.25);border-bottom-color:rgba(34,197,94,0.4);font-size:12px;min-width:42px}
-
-/* 聽力按鈕 */
-.listen-btn{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,#db2777,#9d174d);
-border:none;font-size:32px;cursor:pointer;margin:12px auto;display:block;
-box-shadow:0 5px 18px rgba(219,39,119,0.4);color:#fff;transition:all 0.2s}
-.listen-btn:active{transform:scale(0.93)}
-.listen-btn.playing{box-shadow:0 0 0 12px rgba(219,39,119,0.2);animation:lPulse 0.8s infinite}
-@keyframes lPulse{0%,100%{box-shadow:0 0 0 0 rgba(219,39,119,0.5)}50%{box-shadow:0 0 0 14px rgba(219,39,119,0)}}
-
-/* ── 結果彈窗 ── */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);
-display:none;align-items:center;justify-content:center;z-index:200;padding:18px}
-.overlay.on{display:flex}
-.modal{background:#111827;border:1px solid rgba(255,255,255,0.1);border-radius:24px;
-padding:26px 22px;max-width:340px;width:100%;text-align:center;
-animation:mPop 0.35s cubic-bezier(0.34,1.56,0.64,1)}
-@keyframes mPop{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
-.m-icon{font-size:68px;display:block;margin-bottom:10px}
-.m-title{font-size:24px;font-weight:900;margin-bottom:8px}
-.m-title.ok{color:#86efac}
-.m-title.no{color:#fca5a5}
-.m-word{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:13px;margin:12px 0}
-.m-en{font-size:24px;font-weight:900;color:#93c5fd;margin-bottom:3px}
-.m-zh{font-size:14px;color:rgba(255,255,255,0.5)}
-.m-sent{font-size:12px;color:rgba(147,197,253,0.5);font-style:italic;margin-top:6px}
-.m-rwds{display:flex;justify-content:center;gap:18px;margin:12px 0}
-.m-rwd{text-align:center}
-.m-rwd-ic{font-size:26px}
-.m-rwd-tx{font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px}
-.m-btn{width:100%;padding:13px;font-size:16px;font-weight:800;border:none;border-radius:14px;
-cursor:pointer;color:#fff;margin-top:6px;transition:all 0.2s}
-.m-btn:active{transform:scale(0.97)}
-.m-btn.ok{background:linear-gradient(135deg,#22c55e,#15803d)}
-.m-btn.no{background:linear-gradient(135deg,#f97316,#c2410c)}
-
-/* ── 關卡完成 ── */
-#ovLevelDone{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e)}
-.ld-box{text-align:center;padding:30px 20px;animation:fadeUp 0.5s ease}
-.ld-trophy{font-size:90px;animation:logoBob 1s ease-in-out infinite;filter:drop-shadow(0 0 18px rgba(251,191,36,0.8))}
-.ld-title{font-size:28px;font-weight:900;margin:14px 0;color:#fff}
-.ld-stars{font-size:44px;letter-spacing:4px;margin:8px 0}
-.ld-stats{display:flex;justify-content:center;gap:28px;margin:18px 0}
-.ld-stat-v{font-size:32px;font-weight:900;color:#fbbf24}
-.ld-stat-l{font-size:12px;color:rgba(255,255,255,0.45);margin-top:2px}
-.ld-btn{background:#fff;color:#0f0c29;border:none;padding:14px 44px;font-size:18px;font-weight:800;border-radius:26px;cursor:pointer;margin-top:14px}
-.ld-btn:active{transform:scale(0.97)}
-
-/* ── 每日完成 ── */
-#ovDailyDone{background:linear-gradient(135deg,#0d1f0d,#1a3a1a)}
-.dd-box{text-align:center;padding:30px 20px;animation:fadeUp 0.5s ease;max-width:320px;width:100%}
-.dd-icon{font-size:80px;animation:fFire 1s ease-in-out infinite}
-.dd-title{font-size:26px;font-weight:900;color:#fbbf24;margin:10px 0;text-shadow:0 0 12px rgba(251,191,36,0.4)}
-.dd-streak{font-size:60px;font-weight:900;color:#fff;line-height:1}
-.dd-slbl{font-size:14px;color:rgba(255,255,255,0.45);margin-bottom:18px}
-.dd-rwds{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:16px 0}
-.dd-rwd{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px 8px;text-align:center}
-.dd-rwd-ic{font-size:26px;margin-bottom:4px}
-.dd-rwd-v{font-size:16px;font-weight:800}
-.dd-rwd-l{font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px}
-.dd-btn{width:100%;padding:14px;font-size:16px;font-weight:800;border:none;border-radius:14px;cursor:pointer;color:#fff;background:linear-gradient(135deg,#fbbf24,#d97706);margin-top:4px}
-.dd-btn:active{transform:scale(0.97)}
-
-/* ── 單字本 ── */
-#pgWord{background:#0d1117;overflow-y:auto;padding-bottom:80px}
-.pg-hd{background:rgba(0,0,0,0.4);padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,0.06);position:sticky;top:0;z-index:50}
-.pg-back{background:rgba(255,255,255,0.1);border:none;color:#fff;width:36px;height:36px;border-radius:10px;font-size:17px;cursor:pointer;flex-shrink:0}
-.pg-ttl{font-size:17px;font-weight:800}
-.word-grid{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.w-tile{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:13px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:all 0.2s;position:relative}
-.w-tile:active{transform:scale(0.96)}
-.w-tile.ms{border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.04)}
-.w-emoji{font-size:34px}
-.w-en{font-size:14px;font-weight:800}
-.w-zh{font-size:11px;color:rgba(255,255,255,0.45)}
-.w-play{position:absolute;top:7px;right:7px;background:rgba(34,197,94,0.2);border:none;color:#4ade80;width:26px;height:26px;border-radius:7px;font-size:13px;cursor:pointer}
-.w-ms-badge{position:absolute;top:5px;left:5px;background:rgba(251,191,36,0.2);color:#fbbf24;font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px}
-.empty-msg{grid-column:1/-1;text-align:center;padding:50px 20px;color:rgba(255,255,255,0.3);font-size:14px}
-
-/* ── 統計 ── */
-#pgStats{background:#0d1117;overflow-y:auto;padding-bottom:80px}
-.s-grid{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.s-tile{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:16px;text-align:center}
-.s-tile.big{grid-column:1/-1;background:rgba(251,191,36,0.06);border-color:rgba(251,191,36,0.2)}
-.s-val{font-size:36px;font-weight:900;color:#4ade80}
-.s-tile.big .s-val{color:#fbbf24;font-size:48px}
-.s-lbl{font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px}
-.ach-wrap{padding:0 14px 14px}
-.ach-ttl{font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
-.ach-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.ach-item{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 6px;text-align:center}
-.ach-item.got{border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.05)}
-.ach-item.nope{opacity:0.3}
-.ach-ic{font-size:26px;margin-bottom:4px}
-.ach-nm{font-size:9px;color:rgba(255,255,255,0.45);font-weight:700}
-
-/* ── 複習橫幅 ── */
-.review-banner{background:rgba(239,68,68,0.12);border-bottom:1px solid rgba(239,68,68,0.25);padding:10px 14px;text-align:center;font-size:13px;color:#fca5a5;font-weight:700}
-
-/* Phonics */
-.ph-word{display:inline-flex;flex-wrap:wrap;gap:1px;justify-content:center}
-.ph-seg{cursor:pointer;transition:all .15s;padding:1px 0;border-radius:3px}
-.ph-seg:active{transform:scale(.9)}
-
-/* particle */
-.ptc{position:fixed;pointer-events:none;font-size:22px;z-index:999;animation:ptcFly 0.9s ease-out forwards}
-@keyframes ptcFly{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-70px) scale(0.2);opacity:0}}
+.overlay{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;padding:24px;
+  background:radial-gradient(ellipse at 50% 30%,rgba(40,30,70,.92),rgba(12,10,28,.97));overflow-y:auto;}
+.overlay.hidden{display:none;}
+.title-logo{font-size:clamp(2.4rem,12vw,4.2rem);font-weight:900;line-height:1;
+  background:linear-gradient(180deg,#ffe66d,#ff9f1c,#ff6b35);-webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;filter:drop-shadow(3px 4px 0 #c1440e);letter-spacing:1px;
+  animation:bob 2.2s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(-12px) rotate(1deg);}}
+.title-sub{color:#bcd;font-size:1.05rem;margin-top:6px;font-weight:700;letter-spacing:2px;}
+.hero-emoji{font-size:5rem;margin:10px 0;animation:heroHop 1.4s ease-in-out infinite;filter:drop-shadow(0 8px 12px rgba(0,0,0,.5));}
+@keyframes heroHop{0%,100%{transform:translateY(0) scale(1);}40%{transform:translateY(-26px) scale(1.08,.92);}70%{transform:translateY(0) scale(.95,1.05);}}
+.big-btn{margin-top:18px;padding:16px 44px;font-size:1.4rem;font-weight:900;color:#fff;border:none;cursor:pointer;
+  border-radius:50px;background:linear-gradient(145deg,#43d17a,#1ea65a);
+  box-shadow:0 6px 0 #137a3f,0 10px 22px rgba(0,0,0,.4);letter-spacing:2px;
+  border:3px solid rgba(255,255,255,.3);transition:transform .08s;}
+.big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #137a3f;}
+.menu-card{background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.15);border-radius:22px;
+  padding:20px 24px;max-width:380px;width:100%;}
+.help-row{color:#cde;font-size:.92rem;line-height:1.85;text-align:left;margin-top:8px;}
+.help-row b{color:#ffd166;}
+.lvl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px;width:100%;max-width:380px;}
+.char-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px;width:100%;max-width:380px;}
+.char-btn{aspect-ratio:1;border-radius:20px;border:3px solid rgba(255,255,255,.18);cursor:pointer;
+  background:linear-gradient(145deg,#4a5d8a,#2d3a59);color:#fff;font-size:2.6rem;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 5px 0 #1a2440;
+  transition:transform .12s,box-shadow .12s;position:relative;}
+.char-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #1a2440;}
+.char-btn.selected{border-color:#ffd166;background:linear-gradient(145deg,#5a7dca,#3a5099);
+  box-shadow:0 0 0 3px #ffd166,0 6px 0 #1a2440,0 0 22px rgba(255,209,102,.6);transform:translateY(-3px) scale(1.05);}
+.char-btn .char-check{position:absolute;top:-8px;right:-8px;font-size:1.1rem;display:none;}
+.char-btn.selected .char-check{display:block;}
+.char-info{margin-top:14px;color:#ffe9b8;font-weight:800;font-size:1.05rem;min-height:1.4em;letter-spacing:1px;}
+.char-info .cname{color:#ffd166;font-size:1.2rem;}
+.lvl-btn{aspect-ratio:1;border-radius:18px;border:3px solid rgba(255,255,255,.2);cursor:pointer;
+  background:linear-gradient(145deg,#4a5d8a,#2d3a59);color:#fff;font-weight:900;font-size:1.5rem;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  box-shadow:0 5px 0 #1a2440;transition:transform .08s;position:relative;}
+.lvl-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #1a2440;}
+.lvl-btn.locked{filter:grayscale(.8) brightness(.55);cursor:not-allowed;}
+.lvl-btn .lvl-name{font-size:.6rem;font-weight:700;letter-spacing:.3px;opacity:.85;padding:0 2px;}
+.lvl-btn .lvl-star{position:absolute;top:4px;right:6px;font-size:.7rem;letter-spacing:-2px;}
+.result-title{font-size:clamp(2rem,9vw,3rem);font-weight:900;}
+.result-title.win{color:#ffe66d;text-shadow:3px 3px 0 #c1440e;}
+.result-title.lose{color:#ff6b8a;text-shadow:3px 3px 0 #6b1530;}
+.result-stats{color:#cde;font-size:1.1rem;margin:14px 0;line-height:1.8;font-weight:700;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
+.small-btn{padding:12px 24px;font-size:1.02rem;font-weight:900;color:#fff;border:none;cursor:pointer;
+  border-radius:40px;background:linear-gradient(145deg,#5a6dae,#3a4a82);box-shadow:0 5px 0 #232f55;
+  border:2px solid rgba(255,255,255,.2);letter-spacing:1px;transition:transform .08s;}
+.small-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #232f55;}
+.small-btn.green{background:linear-gradient(145deg,#43d17a,#1ea65a);box-shadow:0 5px 0 #137a3f;}
+.small-btn.gold{background:linear-gradient(145deg,#ffd166,#f0a500);box-shadow:0 5px 0 #b87900;color:#5a3a00;}
+#flashMsg{position:absolute;top:30%;left:50%;transform:translateX(-50%);z-index:18;
+  font-size:clamp(1.6rem,8vw,2.6rem);font-weight:900;color:#ffe66d;text-shadow:3px 3px 0 #c1440e;
+  pointer-events:none;opacity:0;letter-spacing:2px;text-align:center;width:90%;}
+#flashMsg.show{animation:flashIn 1.6s ease;}
+@keyframes flashIn{0%{opacity:0;transform:translateX(-50%) scale(.4);}18%{opacity:1;transform:translateX(-50%) scale(1.12);}
+  32%{transform:translateX(-50%) scale(1);}78%{opacity:1;}100%{opacity:0;transform:translateX(-50%) scale(1) translateY(-30px);}}
+#pauseBtn{position:absolute;top:max(10px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:16;pointer-events:auto;
+  background:rgba(20,20,40,.55);border:2px solid rgba(255,255,255,.15);border-radius:12px;
+  color:#fff;font-size:1.1rem;padding:5px 14px;font-weight:900;cursor:pointer;}
+.credit{margin-top:18px;color:rgba(255,255,255,.35);font-size:.78rem;}
+#errBox{position:absolute;top:0;left:0;right:0;background:#c0392b;color:#fff;font-size:12px;
+  padding:8px;z-index:9999;font-family:monospace;white-space:pre-wrap;display:none;}
+.hidden{display:none!important;}
 </style>
-
 </head>
 <body>
+<div id="errBox"></div>
+<div id="game"><canvas id="cv"></canvas></div>
 
-<!-- 標題畫面 -->
-
-<div class="pg" id="pgTitle">
-  <div class="t-stars" id="tStars"></div>
-  <div class="t-logo">⛏️</div>
-  <div class="t-title">英文冒險世界</div>
-  <div class="t-sub">✨ 每天10分鐘，英文變高手 ✨</div>
-  <div class="t-profile" id="tProfile">
-    <div class="t-avatar">🧱</div>
-    <div class="t-name">小蛹</div>
-    <div class="t-pstats" id="tPstats">載入中...</div>
+<div id="hud" class="hidden">
+  <div class="hud-box">
+    <div class="hud-item">🐹<span id="livesNum">3</span></div>
+    <div class="hud-item">🪙<span id="coinNum">0</span></div>
   </div>
-  <div class="t-feats">
-    <div class="t-feat">🔊 聽力</div>
-    <div class="t-feat">✏️ 拼寫</div>
-    <div class="t-feat">🔥 每日連續</div>
-    <div class="t-feat">📖 單字本</div>
+  <div class="hud-box"><div class="hud-item">🗺️<span id="worldNum">1-1</span></div></div>
+</div>
+<button id="pauseBtn" class="hidden">⏸</button>
+
+<div id="controls" class="hidden">
+  <button class="btn dpad" id="btnLeft">◀</button>
+  <button class="btn dpad" id="btnRight">▶</button>
+  <button class="btn" id="btnRun">衝刺</button>
+  <button class="btn" id="btnJump">跳 ⬆</button>
+</div>
+
+<div id="flashMsg"></div>
+
+<div class="overlay" id="menuScreen">
+  <div class="hero-emoji">🐹</div>
+  <div class="title-logo">波比冒險島</div>
+  <div class="title-sub">POBBY · ADVENTURE</div>
+  <div class="menu-card">
+    <button class="big-btn" id="startBtn">開始冒險 ▶</button>
+    <div class="help-row">
+      🎮 <b>左右鍵</b> 移動，<b>跳</b> 鈕跳躍<br>
+      🦘 踩在敵人頭上把牠踩扁！<br>
+      ⚡ 按住 <b>衝刺</b> 跑更快、跳更遠<br>
+      🍄 吃蘑菇變大，吃星星無敵！<br>
+      🚩 拿到金幣，碰旗桿就過關！
+    </div>
+  </div>
+  <div class="credit">為小蛹與阿均打造 🌟</div>
+</div>
+
+<div class="overlay hidden" id="charScreen">
+  <div class="title-logo" style="font-size:2.2rem;">選擇夥伴</div>
+  <div class="title-sub" style="margin-bottom:4px;">挑一隻一起冒險！</div>
+  <div class="char-grid" id="charGrid"></div>
+  <div class="char-info" id="charInfo"></div>
+  <button class="big-btn" id="charConfirm">就決定是你了！▶</button>
+  <button class="small-btn" id="charBack" style="margin-top:10px;">← 返回</button>
+</div>
+
+<div class="overlay hidden" id="levelScreen">
+  <div class="title-logo" style="font-size:2.4rem;">選擇關卡</div>
+  <div class="lvl-grid" id="lvlGrid"></div>
+  <button class="small-btn" id="backToMenu" style="margin-top:22px;">← 返回</button>
+</div>
+
+<div class="overlay hidden" id="resultScreen">
+  <div class="hero-emoji" id="resultEmoji">🎉</div>
+  <div class="result-title" id="resultTitle">過關！</div>
+  <div class="result-stats" id="resultStats"></div>
+  <div class="btn-row">
+    <button class="small-btn" id="retryBtn">🔄 再玩一次</button>
+    <button class="small-btn green" id="nextBtn">下一關 ▶</button>
+    <button class="small-btn" id="mapBtn">🗺️ 選關</button>
   </div>
 </div>
 
-<!-- 主選單 -->
-
-<div class="pg" id="pgHub">
-  <div class="hub-top">
-    <div class="hub-row">
-      <div class="hub-player">
-        <div class="hub-av">🧱</div>
-        <div>
-          <div class="hub-uname">小蛹</div>
-          <div class="hub-ulv" id="hLv">⚔️ 英文探險新手</div>
-        </div>
-      </div>
-      <div class="hub-gems">
-        <div class="gem">⭐<span id="hStars">0</span></div>
-        <div class="gem">🧱<span id="hBlocks">0</span></div>
-      </div>
-    </div>
-    <div class="streak-box">
-      <div class="streak-fire">🔥</div>
-      <div>
-        <div class="streak-days"><span id="hStreak">0</span> 天連續！</div>
-        <div class="streak-lbl" id="hStreakLbl">今天就開始你的連續紀錄！</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="sec">
-    <div class="sec-lbl">📅 今日任務</div>
-    <div class="daily-card" id="dailyCard">
-      <div class="dc-head">
-        <div class="dc-title" id="dcTitle">今日英文探險</div>
-        <div class="dc-tag" id="dcTag">進行中</div>
-      </div>
-      <div class="dc-bar-bg"><div class="dc-bar" id="dcBar" style="width:0%"></div></div>
-      <div class="dc-meta">
-        <div class="dc-meta-i">📝 <span id="dcMeta">0/5</span></div>
-        <div class="dc-meta-i">⏱️ 約10分鐘</div>
-        <div class="dc-meta-i">🧱 +5積木</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="sec" style="padding-bottom:14px">
-    <div class="sec-lbl" style="margin-top:14px">🗺️ 探險地圖</div>
-    <div id="worldList"></div>
-  </div>
-</div>
-
-<!-- 遊戲畫面 -->
-
-<div class="pg" id="pgGame">
-  <div class="g-topbar">
-    <button class="g-back" id="gBack">←</button>
-    <div class="g-info">
-      <div class="g-title" id="gTitle">關卡</div>
-      <div class="g-sub" id="gSub">第1題 共10題</div>
-    </div>
-    <div class="g-lives" id="gLives">
-      <span class="g-heart">❤️</span>
-      <span class="g-heart">❤️</span>
-      <span class="g-heart">❤️</span>
-    </div>
-  </div>
-  <div class="review-banner" id="revBanner" style="display:none">🔄 複習模式：練習上次答錯的題目</div>
-  <div class="build-zone">
-    <div class="bz-sun">☀️</div>
-    <div class="bz-blocks" id="bzBlocks"></div>
-    <div class="bz-prog" id="bzProg">🏗️ 0/10</div>
-  </div>
-  <div class="q-wrap">
-    <div class="q-card" id="qCard">
-      <div class="q-badge rd" id="qBadge">📖 看圖選字</div>
-      <div class="q-img" id="qImg">🏠</div>
-      <div class="q-text" id="qText">請選出正確答案</div>
-      <div class="q-hint-lbl" id="qHintLbl"></div>
-      <button class="hint-btn" id="hintBtn">💡 需要提示？</button>
-      <div class="hint-box" id="hintBox" style="display:none"></div>
-      <div class="opts" id="opts"></div>
-      <div id="spellArea" style="display:none">
-        <div class="spell-boxes" id="spellBoxes"></div>
-        <div class="kb" id="kb"></div>
-      </div>
-      <button class="listen-btn" id="listenBtn" style="display:none">🔊</button>
-    </div>
-  </div>
-</div>
-
-<!-- 單字本 -->
-
-<div class="pg" id="pgWord">
-  <div class="pg-hd">
-    <button class="pg-back" id="wbBack">←</button>
-    <div class="pg-ttl">📖 單字本 (<span id="wbCnt">0</span>)</div>
-  </div>
-  <div class="word-grid" id="wordGrid"></div>
-</div>
-
-<!-- 統計 -->
-
-<div class="pg" id="pgStats">
-  <div class="pg-hd">
-    <button class="pg-back" id="stBack">←</button>
-    <div class="pg-ttl">📊 學習統計</div>
-  </div>
-  <div class="s-grid">
-    <div class="s-tile big"><div class="s-val" id="stStreak">0</div><div class="s-lbl">🔥 最長連續天數</div></div>
-    <div class="s-tile"><div class="s-val" id="stWords">0</div><div class="s-lbl">已學單字</div></div>
-    <div class="s-tile"><div class="s-val" id="stStars">0</div><div class="s-lbl">⭐ 星星</div></div>
-    <div class="s-tile"><div class="s-val" id="stBlocks">0</div><div class="s-lbl">🧱 積木</div></div>
-    <div class="s-tile"><div class="s-val" id="stLevels">0</div><div class="s-lbl">完成關卡</div></div>
-  </div>
-  <div class="ach-wrap">
-    <div class="ach-ttl">🏆 成就</div>
-    <div class="ach-grid" id="achGrid"></div>
-  </div>
-</div>
-
-<!-- 底部導航 -->
-
-<div class="bnav" id="bnav" style="display:none">
-  <button class="bn on" id="bnHub">
-    <span class="bn-ic">🗺️</span>地圖
-  </button>
-  <button class="bn" id="bnWord">
-    <span class="bn-ic">📖</span>單字
-  </button>
-  <button class="bn" id="bnRev" style="position:relative">
-    <span class="bn-ic">🔄</span>複習
-    <span class="bn-badge" id="revBadge" style="display:none">0</span>
-  </button>
-  <button class="bn" id="bnStats">
-    <span class="bn-ic">📊</span>統計
-  </button>
-</div>
-
-<!-- 結果彈窗 -->
-
-<div class="overlay" id="ovResult">
-  <div class="modal">
-    <span class="m-icon" id="mIco">🎉</span>
-    <div class="m-title ok" id="mTtl">答對了！</div>
-    <div class="m-word">
-      <div class="m-en" id="mEn">house</div>
-      <div id="mPhonics" style="margin:6px 0;display:flex;justify-content:center;gap:0;flex-wrap:wrap"></div>
-      <div id="mPhLegend" style="font-size:10px;color:rgba(255,255,255,.4);margin:4px 0"></div>
-      <div class="m-zh" id="mZh">房子</div>
-      <div class="m-sent" id="mSent">This is my house.</div>
-    </div>
-    <div class="m-rwds" id="mRwds"></div>
-    <button class="m-btn ok" id="mBtn">下一題 →</button>
-  </div>
-</div>
-
-<!-- 關卡完成 -->
-
-<div class="overlay" id="ovLevelDone">
-  <div class="ld-box">
-    <div class="ld-trophy">🏆</div>
-    <div class="ld-title" id="ldTtl">關卡完成！</div>
-    <div class="ld-stars" id="ldStars">⭐⭐⭐</div>
-    <div class="ld-stats">
-      <div><div class="ld-stat-v" id="ldCorrect">0</div><div class="ld-stat-l">答對</div></div>
-      <div><div class="ld-stat-v" id="ldBlocks">0</div><div class="ld-stat-l">積木</div></div>
-      <div><div class="ld-stat-v" id="ldWds">0</div><div class="ld-stat-l">單字</div></div>
-    </div>
-    <button class="ld-btn" id="ldBtn">繼續冒險 →</button>
-  </div>
-</div>
-
-<!-- 每日完成 -->
-
-<div class="overlay" id="ovDailyDone">
-  <div class="dd-box">
-    <div class="dd-icon">🔥</div>
-    <div class="dd-title">今日任務完成！</div>
-    <div class="dd-streak" id="ddStreak">1</div>
-    <div class="dd-slbl">天連續挑戰 🎉</div>
-    <div class="dd-rwds">
-      <div class="dd-rwd"><div class="dd-rwd-ic">⭐</div><div class="dd-rwd-v" id="ddS">+50</div><div class="dd-rwd-l">星星</div></div>
-      <div class="dd-rwd"><div class="dd-rwd-ic">🧱</div><div class="dd-rwd-v" id="ddB">+5</div><div class="dd-rwd-l">積木</div></div>
-      <div class="dd-rwd"><div class="dd-rwd-ic">📚</div><div class="dd-rwd-v" id="ddW">+0</div><div class="dd-rwd-l">新單字</div></div>
-    </div>
-    <button class="dd-btn" id="ddBtn">太棒了！繼續加油 🚀</button>
+<div class="overlay hidden" id="pauseScreen">
+  <div class="title-logo" style="font-size:2.4rem;">暫停</div>
+  <div class="btn-row" style="margin-top:24px;flex-direction:column;align-items:center;">
+    <button class="big-btn" id="resumeBtn">繼續遊戲 ▶</button>
+    <button class="small-btn" id="quitBtn" style="margin-top:10px;">🗺️ 回到選關</button>
   </div>
 </div>
 
 <script>
-// =============================================
-// 資料庫
-// =============================================
-var WORLDS = [
-  { id:1, name:'我的家', icon:'🏠', color:'#22c55e',
-    levels:[
-      { id:'1-1', name:'家人', words:[
-        {en:'family',zh:'家庭',img:'👨‍👩‍👧‍👦',s:'I love my family.'},
-        {en:'father',zh:'爸爸',img:'👨',s:'My father is tall.'},
-        {en:'mother',zh:'媽媽',img:'👩',s:'My mother is kind.'},
-        {en:'brother',zh:'哥哥',img:'👦',s:'I have a brother.'},
-        {en:'sister',zh:'姐姐',img:'👧',s:'My sister is cute.'},
-        {en:'grandpa',zh:'爺爺',img:'👴',s:'Grandpa tells stories.'},
-        {en:'grandma',zh:'奶奶',img:'👵',s:'Grandma makes cookies.'},
-        {en:'uncle',zh:'叔叔',img:'🧔',s:'My uncle is funny.'},
-        {en:'aunt',zh:'阿姨',img:'👩‍🦱',s:'My aunt is nice.'},
-        {en:'baby',zh:'寶寶',img:'👶',s:'The baby is cute.'}
-      ]},
-      { id:'1-2', name:'房間', words:[
-        {en:'house',zh:'房子',img:'🏠',s:'This is my house.'},
-        {en:'room',zh:'房間',img:'🛏️',s:'My room is clean.'},
-        {en:'bed',zh:'床',img:'🛏️',s:'I sleep in my bed.'},
-        {en:'door',zh:'門',img:'🚪',s:'Please close the door.'},
-        {en:'window',zh:'窗戶',img:'🪟',s:'Open the window.'},
-        {en:'table',zh:'桌子',img:'📋',s:'Books are on the table.'},
-        {en:'chair',zh:'椅子',img:'🪑',s:'Sit on the chair.'},
-        {en:'lamp',zh:'燈',img:'💡',s:'Turn on the lamp.'},
-        {en:'clock',zh:'時鐘',img:'🕐',s:'Look at the clock.'},
-        {en:'mirror',zh:'鏡子',img:'🪞',s:'I look in the mirror.'}
-      ]},
-      { id:'1-3', name:'家具', words:[
-        {en:'sofa',zh:'沙發',img:'🛋️',s:'I sit on the sofa.'},
-        {en:'kitchen',zh:'廚房',img:'🍳',s:'Mom cooks in the kitchen.'},
-        {en:'bathroom',zh:'浴室',img:'🛁',s:'I wash in the bathroom.'},
-        {en:'floor',zh:'地板',img:'🟫',s:'The floor is clean.'},
-        {en:'wall',zh:'牆壁',img:'🧱',s:'The wall is white.'},
-        {en:'stairs',zh:'樓梯',img:'🪜',s:'Go up the stairs.'},
-        {en:'key',zh:'鑰匙',img:'🔑',s:'I have a key.'},
-        {en:'TV',zh:'電視',img:'📺',s:'I watch TV at night.'},
-        {en:'garden',zh:'花園',img:'🌷',s:'We have a garden.'},
-        {en:'roof',zh:'屋頂',img:'🏚️',s:'The roof is red.'}
-      ]}
+(function(){
+'use strict';
+
+/* ===== iOS 可見錯誤覆蓋層 ===== */
+window.onerror=function(msg,src,line,col){
+  var e=document.getElementById('errBox');
+  if(e){e.style.display='block';e.textContent='⚠️ '+msg+' @line '+line;}
+  return false;
+};
+
+/* ========================= 常數 ========================= */
+var TILE=40;
+var GRAV=0.62, MAXFALL=15;
+var MOVE=0.85, FRICTION=0.82;
+var MAXVX_WALK=4.0, MAXVX_RUN=6.8;
+var JUMP=-12.4, JUMP_HOLD=-0.42, JUMP_HOLD_FRAMES=12;
+var COYOTE=6, JUMP_BUFFER=8;
+
+/* ========================= DOM ========================= */
+var cv=document.getElementById('cv');
+var ctx=cv.getContext('2d');
+var elLives=document.getElementById('livesNum');
+var elCoins=document.getElementById('coinNum');
+var elWorld=document.getElementById('worldNum');
+var elFlash=document.getElementById('flashMsg');
+
+/* ========================= 視口 ========================= */
+var VW=0,VH=0,DPR=1,SCALE=1;
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  VW=window.innerWidth; VH=window.innerHeight;
+  cv.width=Math.floor(VW*DPR); cv.height=Math.floor(VH*DPR);
+  cv.style.width=VW+'px'; cv.style.height=VH+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  // 邏輯縮放：畫面顯示約 11~13 格高
+  SCALE=VH/(TILE*11.0);
+  SCALE=Math.max(0.62, Math.min(SCALE,1.7));
+}
+window.addEventListener('resize',resize);
+window.addEventListener('orientationchange',function(){setTimeout(resize,250);});
+
+/* ========================= 音效 ========================= */
+var AC=null;
+function audio(){
+  if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } }
+  if(AC && AC.state==='suspended'){ AC.resume(); }
+  return AC;
+}
+function beep(freq,dur,type,vol){
+  var a=audio(); if(!a) return;
+  try{
+    var o=a.createOscillator(), g=a.createGain();
+    o.type=type||'square'; o.frequency.value=freq;
+    o.connect(g); g.connect(a.destination);
+    var t=a.currentTime;
+    g.gain.setValueAtTime(vol||0.07,t);
+    g.gain.exponentialRampToValueAtTime(0.0008,t+dur);
+    o.start(t); o.stop(t+dur);
+  }catch(e){}
+}
+function sfxJump(){ beep(520,0.11,'square',0.06); setTimeout(function(){beep(740,0.09,'square',0.045);},55); }
+function sfxCoin(){ beep(988,0.05,'square',0.05); setTimeout(function(){beep(1319,0.09,'square',0.055);},50); }
+function sfxStomp(){ beep(170,0.10,'square',0.08); beep(90,0.13,'sawtooth',0.045); }
+function sfxHurt(){ beep(300,0.16,'sawtooth',0.09); setTimeout(function(){beep(150,0.22,'sawtooth',0.08);},80); }
+function sfxPower(){ [523,659,784,1047].forEach(function(f,i){setTimeout(function(){beep(f,0.11,'square',0.06);},i*65);}); }
+function sfxBrick(){ beep(220,0.07,'square',0.055); }
+function sfxBump(){ beep(160,0.06,'square',0.05); }
+function sfxWin(){ [523,659,784,1047,1319,1047,1319].forEach(function(f,i){setTimeout(function(){beep(f,0.15,'square',0.07);},i*110);}); }
+function sfxLose(){ [392,330,262,196].forEach(function(f,i){setTimeout(function(){beep(f,0.22,'sawtooth',0.075);},i*150);}); }
+function sfx1up(){ [659,784,1047,1319].forEach(function(f,i){setTimeout(function(){beep(f,0.10,'triangle',0.07);},i*70);}); }
+function sfxSpring(){ beep(400,0.08,'square',0.07); setTimeout(function(){beep(800,0.12,'square',0.06);},50); setTimeout(function(){beep(1200,0.10,'square',0.05);},110); }
+function sfxBossJump(){ beep(120,0.18,'sawtooth',0.08); }
+function sfxBossHurt(){ beep(220,0.14,'sawtooth',0.10); setTimeout(function(){beep(110,0.20,'square',0.08);},70); }
+
+/* ========================= 存檔 ========================= */
+function loadSave(){
+  try{ var s=localStorage.getItem('pobbyAdventureV2'); if(s) return JSON.parse(s); }catch(e){}
+  return {unlocked:1, stars:{}, bestCoins:{}, charIndex:0};
+}
+var save=loadSave();
+function persist(){ try{ save.charIndex=charIndex; localStorage.setItem('pobbyAdventureV2',JSON.stringify(save)); }catch(e){} }
+
+
+/* ========================= 關卡資料 =========================
+   地圖用字元網格，每字元一格 TILE：
+   空白=空  X=地面  B=可破壞磚  ?=問號磚(金幣)  M=問號磚(蘑菇)
+   o=金幣  g=敵人(走路怪)  f=飛行怪  s=尖刺  p=平台(穿越)  
+   =  跳台磚 (硬)  |=旗桿  C=雲(裝飾) ^=星星磚  S=玩家起點
+=============================================================== */
+var LEVELS=[
+  {
+    name:'波比的第一步', theme:'grass', time:300,
+    map:[
+      "                                                                                          ",
+      "          C                           C                        C                ^         ",
+      "                                                                                o         ",
+      "                                                                               o o        ",
+      "                                                                              o        |  ",
+      "                                                                                          ",
+      "                               ?         o o o                                o oJo       ",
+      "                 o o o                   XXXXX                          o o o XXXXX       ",
+      "                 XXXXXX                  XXXXX                    o o o XXXXX XXXXX       ",
+      "  S  o o o o o   XXXXXX     g    o o     XXXXX        g o o g     XXXXX XXXXX XXXXX       ",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     ]
   },
-  { id:2, name:'美食王國', icon:'🍎', color:'#ef4444',
-    levels:[
-      { id:'2-1', name:'水果', words:[
-        {en:'apple',zh:'蘋果',img:'🍎',s:'I eat an apple.'},
-        {en:'banana',zh:'香蕉',img:'🍌',s:'The banana is yellow.'},
-        {en:'orange',zh:'橘子',img:'🍊',s:'I like oranges.'},
-        {en:'grape',zh:'葡萄',img:'🍇',s:'Grapes are sweet.'},
-        {en:'strawberry',zh:'草莓',img:'🍓',s:'I love strawberries.'},
-        {en:'watermelon',zh:'西瓜',img:'🍉',s:'Watermelon is big.'},
-        {en:'lemon',zh:'檸檬',img:'🍋',s:'Lemons are sour.'},
-        {en:'cherry',zh:'櫻桃',img:'🍒',s:'Cherries are small.'},
-        {en:'mango',zh:'芒果',img:'🥭',s:'Mangoes are delicious.'},
-        {en:'peach',zh:'桃子',img:'🍑',s:'The peach is soft.'}
-      ]},
-      { id:'2-2', name:'食物', words:[
-        {en:'rice',zh:'米飯',img:'🍚',s:'I eat rice for dinner.'},
-        {en:'bread',zh:'麵包',img:'🍞',s:'I have bread for breakfast.'},
-        {en:'egg',zh:'雞蛋',img:'🥚',s:'I like eggs.'},
-        {en:'fish',zh:'魚',img:'🐟',s:'Fish is healthy.'},
-        {en:'chicken',zh:'雞肉',img:'🍗',s:'I eat chicken.'},
-        {en:'noodle',zh:'麵條',img:'🍜',s:'Noodles are long.'},
-        {en:'soup',zh:'湯',img:'🍲',s:'The soup is hot.'},
-        {en:'salad',zh:'沙拉',img:'🥗',s:'Salad is fresh.'},
-        {en:'pizza',zh:'披薩',img:'🍕',s:'I love pizza.'},
-        {en:'cake',zh:'蛋糕',img:'🎂',s:'The cake is sweet.'}
-      ]},
-      { id:'2-3', name:'飲料', words:[
-        {en:'water',zh:'水',img:'💧',s:'I drink water.'},
-        {en:'milk',zh:'牛奶',img:'🥛',s:'Milk is white.'},
-        {en:'juice',zh:'果汁',img:'🧃',s:'I like apple juice.'},
-        {en:'tea',zh:'茶',img:'🍵',s:'Mom drinks tea.'},
-        {en:'coffee',zh:'咖啡',img:'☕',s:'Dad drinks coffee.'},
-        {en:'sweet',zh:'甜的',img:'🍬',s:'Candy is sweet.'},
-        {en:'sour',zh:'酸的',img:'🍋',s:'Lemons are sour.'},
-        {en:'hot',zh:'熱的',img:'🔥',s:'The soup is hot.'},
-        {en:'cold',zh:'冷的',img:'❄️',s:'The water is cold.'},
-        {en:'yummy',zh:'好吃的',img:'😋',s:'This is yummy.'}
-      ]}
+  {
+    name:'彈跳草原', theme:'grass', time:300,
+    map:[
+      "                                                                                            ",
+      "        C                      C                          C                                  ",
+      "                   ?  M  ?                        o o o                                      ",
+      "                                       o o o                                                |",
+      "             o o                  B B B B                          ^                        |",
+      "    o o                ===                            o o o              o o               |",
+      "  =====      g               J          g                    J              g              |",
+      "                                                                                            |",
+      "  S      o o        g              o o          g       o o          g          ====        |",
+      "XXXXXXXXXXXXXX    XXXXXXXXXX     XXXXXXXX    XXXXXXX    XXXXXXXX     XXXXXXXX    XXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXX    XXXXXXXXXX     XXXXXXXX    XXXXXXX    XXXXXXXX     XXXXXXXX    XXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXX    XXXXXXXXXX     XXXXXXXX    XXXXXXX    XXXXXXXX     XXXXXXXX    XXXXXXXXXXXXXX"
     ]
   },
-  { id:3, name:'動物森林', icon:'🦁', color:'#f97316',
-    levels:[
-      { id:'3-1', name:'農場動物', words:[
-        {en:'dog',zh:'狗',img:'🐕',s:'I have a dog.'},
-        {en:'cat',zh:'貓',img:'🐱',s:'The cat is cute.'},
-        {en:'pig',zh:'豬',img:'🐷',s:'Pigs are pink.'},
-        {en:'cow',zh:'牛',img:'🐄',s:'Cows give us milk.'},
-        {en:'sheep',zh:'綿羊',img:'🐑',s:'Sheep have wool.'},
-        {en:'horse',zh:'馬',img:'🐴',s:'Horses run fast.'},
-        {en:'chicken',zh:'雞',img:'🐔',s:'Chickens lay eggs.'},
-        {en:'duck',zh:'鴨子',img:'🦆',s:'Ducks swim in water.'},
-        {en:'rabbit',zh:'兔子',img:'🐰',s:'Rabbits hop fast.'},
-        {en:'goat',zh:'山羊',img:'🐐',s:'Goats climb hills.'}
-      ]},
-      { id:'3-2', name:'野生動物', words:[
-        {en:'lion',zh:'獅子',img:'🦁',s:'Lions are brave.'},
-        {en:'tiger',zh:'老虎',img:'🐯',s:'Tigers have stripes.'},
-        {en:'elephant',zh:'大象',img:'🐘',s:'Elephants are big.'},
-        {en:'monkey',zh:'猴子',img:'🐵',s:'Monkeys climb trees.'},
-        {en:'bear',zh:'熊',img:'🐻',s:'Bears like honey.'},
-        {en:'panda',zh:'熊貓',img:'🐼',s:'Pandas eat bamboo.'},
-        {en:'giraffe',zh:'長頸鹿',img:'🦒',s:'Giraffes are tall.'},
-        {en:'snake',zh:'蛇',img:'🐍',s:'Snakes are long.'},
-        {en:'fox',zh:'狐狸',img:'🦊',s:'Foxes are clever.'},
-        {en:'zebra',zh:'斑馬',img:'🦓',s:'Zebras have stripes.'}
-      ]},
-      { id:'3-3', name:'海洋動物', words:[
-        {en:'fish',zh:'魚',img:'🐟',s:'Fish swim in water.'},
-        {en:'whale',zh:'鯨魚',img:'🐋',s:'Whales are huge.'},
-        {en:'dolphin',zh:'海豚',img:'🐬',s:'Dolphins are smart.'},
-        {en:'shark',zh:'鯊魚',img:'🦈',s:'Sharks swim fast.'},
-        {en:'octopus',zh:'章魚',img:'🐙',s:'Octopus has eight arms.'},
-        {en:'crab',zh:'螃蟹',img:'🦀',s:'Crabs walk sideways.'},
-        {en:'turtle',zh:'海龜',img:'🐢',s:'Turtles are slow.'},
-        {en:'seal',zh:'海豹',img:'🦭',s:'Seals like fish.'},
-        {en:'lobster',zh:'龍蝦',img:'🦞',s:'Lobsters are red.'},
-        {en:'jellyfish',zh:'水母',img:'🪼',s:'Jellyfish are soft.'}
-      ]}
+  {
+    name:'森林探險', theme:'forest', time:320,
+    map:[
+      "                                                                                                       ",
+      "  o o o o      B B B B B      o o o o      ? M ?           o o o o o                                    ",
+      "             o o o o                                                       B B B B                     ",
+      "        ?                    B B B B B          ^              o o o o o                              |",
+      "                  o o                  j               o o o           j          o o                |",
+      "     ===                  ===            j         ===              ===                    ===        |",
+      "              o o o                 g                       g  c                  j                   |",
+      "   S    ===          ===     ===           ===        ===          ===       ===          g           |",
+      "                                                                                                      |",
+      "       g          g g          j           g            g  g           g            g  c             |",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     ]
   },
-  { id:4, name:'校園生活', icon:'🏫', color:'#3b82f6',
-    levels:[
-      { id:'4-1', name:'學校', words:[
-        {en:'school',zh:'學校',img:'🏫',s:'I go to school.'},
-        {en:'teacher',zh:'老師',img:'👩‍🏫',s:'My teacher is nice.'},
-        {en:'student',zh:'學生',img:'🧑‍🎓',s:'I am a student.'},
-        {en:'classroom',zh:'教室',img:'🏫',s:'We study in the classroom.'},
-        {en:'homework',zh:'作業',img:'📝',s:'I do my homework.'},
-        {en:'test',zh:'考試',img:'📄',s:'We have a test today.'},
-        {en:'friend',zh:'朋友',img:'👫',s:'She is my friend.'},
-        {en:'playground',zh:'操場',img:'🏃',s:'We play in the playground.'},
-        {en:'library',zh:'圖書館',img:'📚',s:'I read at the library.'},
-        {en:'desk',zh:'書桌',img:'🪑',s:'I sit at my desk.'}
-      ]},
-      { id:'4-2', name:'文具', words:[
-        {en:'book',zh:'書',img:'📚',s:'I read a book.'},
-        {en:'pencil',zh:'鉛筆',img:'✏️',s:'I write with a pencil.'},
-        {en:'pen',zh:'原子筆',img:'🖊️',s:'Give me a pen.'},
-        {en:'eraser',zh:'橡皮擦',img:'🧽',s:'I need an eraser.'},
-        {en:'ruler',zh:'尺',img:'📏',s:'Use a ruler.'},
-        {en:'scissors',zh:'剪刀',img:'✂️',s:'Cut with scissors.'},
-        {en:'paper',zh:'紙',img:'📄',s:'Write on the paper.'},
-        {en:'bag',zh:'書包',img:'🎒',s:'My bag is heavy.'},
-        {en:'crayon',zh:'蠟筆',img:'🖍️',s:'I color with crayons.'},
-        {en:'glue',zh:'膠水',img:'🗂️',s:'Stick it with glue.'}
-      ]},
-      { id:'4-3', name:'科目', words:[
-        {en:'English',zh:'英文',img:'🔤',s:'I study English.'},
-        {en:'math',zh:'數學',img:'🔢',s:'Math is fun.'},
-        {en:'science',zh:'科學',img:'🔬',s:'I like science.'},
-        {en:'music',zh:'音樂',img:'🎵',s:'We sing in music class.'},
-        {en:'art',zh:'美術',img:'🎨',s:'I draw in art class.'},
-        {en:'PE',zh:'體育',img:'⚽',s:'We run in PE class.'},
-        {en:'read',zh:'閱讀',img:'📖',s:'I read every day.'},
-        {en:'write',zh:'寫字',img:'✍️',s:'I write my name.'},
-        {en:'count',zh:'數數',img:'🔢',s:'I can count to ten.'},
-        {en:'draw',zh:'畫畫',img:'🎨',s:'I like to draw.'}
-      ]}
+  {
+    name:'森林深處', theme:'forest', time:340,
+    map:[
+      "                                                                                                       ",
+      "         C                  C                    C                      C                              ",
+      "      o o o          ? M ?           o o o              ^             o o o o                          |",
+      "                                                  T                                      T            |",
+      "  S         o o          j          o o o         X          o o            o o o                     |",
+      "  ====     ====     ===      ====      ====     XXX     ====      ====    ===     ====      =====      |",
+      "                                                                                       c              |",
+      "              o          o o          j         o o          o          j        o o                 |",
+      "       ===       ====        ===          ====       ===        ====        ===       ====            |",
+      "                                                                                                      |",
+      "    j          o          c         o o          j         o          o o          c                 |",
+      "   =====     =====      =====      =====       =====      =====     =====       =====      ========    |"
     ]
   },
-  { id:5, name:'老師課堂', icon:'📚', color:'#06b6d4',
-    levels:[
-      { id:'5-1', name:'3月13日課程', words:[
-        {en:'helicopter',zh:'直升機',img:'🚁',s:'A helicopter flies in the sky.'},
-        {en:'rescue',zh:'救援',img:'🆘',s:'We need to rescue them.'},
-        {en:'fast',zh:'快速的',img:'⚡',s:'The car is very fast.'},
-        {en:'enormous',zh:'巨大的',img:'🐘',s:'The elephant is enormous.'},
-        {en:'picture',zh:'圖片',img:'🖼️',s:'I draw a picture.'},
-        {en:'castle',zh:'城堡',img:'🏰',s:'The castle is big.'},
-        {en:'knight',zh:'騎士',img:'🤺',s:'The knight is brave.'},
-        {en:'wood',zh:'木頭',img:'🪵',s:'The house is made of wood.'},
-        {en:'black',zh:'黑色',img:'🖤',s:'The sky is black at night.'},
-        {en:'outside',zh:'外面',img:'🌳',s:'Let us play outside.'}
-      ]},
-      { id:'5-2', name:'2月25日課程', words:[
-        {en:'push',zh:'推',img:'🤜',s:'Please push the door.'},
-        {en:'race',zh:'賽跑',img:'🏃',s:'Let us have a race.'},
-        {en:'hospital',zh:'醫院',img:'🏥',s:'Doctors work in hospitals.'},
-        {en:'ambulance',zh:'救護車',img:'🚑',s:'Call the ambulance.'},
-        {en:'toy',zh:'玩具',img:'🧸',s:'I like my toy.'},
-        {en:'spring',zh:'春天',img:'🌸',s:'Flowers bloom in spring.'},
-        {en:'summer',zh:'夏天',img:'☀️',s:'I swim in summer.'},
-        {en:'autumn',zh:'秋天',img:'🍂',s:'Leaves fall in autumn.'},
-        {en:'winter',zh:'冬天',img:'❄️',s:'I wear a coat in winter.'},
-        {en:'weather',zh:'天氣',img:'🌤️',s:'How is the weather today?'}
-      ]},
-      { id:'5-3', name:'季節天氣', words:[
-        {en:'sunny',zh:'晴天',img:'☀️',s:'It is sunny today.'},
-        {en:'rainy',zh:'下雨',img:'🌧️',s:'It is rainy today.'},
-        {en:'windy',zh:'颳風',img:'💨',s:'It is very windy.'},
-        {en:'cloudy',zh:'多雲',img:'☁️',s:'The sky is cloudy.'},
-        {en:'warm',zh:'溫暖的',img:'🌤️',s:'Spring is warm.'},
-        {en:'cool',zh:'涼爽的',img:'🍃',s:'Autumn is cool.'},
-        {en:'snowy',zh:'下雪',img:'🌨️',s:'It is snowy in winter.'},
-        {en:'rainbow',zh:'彩虹',img:'🌈',s:'I see a rainbow.'},
-        {en:'cold',zh:'冷的',img:'🥶',s:'Winter is cold.'},
-        {en:'hot',zh:'熱的',img:'🔥',s:'Summer is hot.'}
-      ]}
+  {
+    name:'水下世界', theme:'water', time:360,
+    map:[
+      "                                                                                                            ",
+      "    o o o o       B B B B        ? ? ?            o o o o          ^ ^            B B B B B               | ",
+      "                 o o o o                  f                f                   o o o o o o     f         | ",
+      "  S      ===              ===       M       ===       f      ===          ===            ===            | ",
+      "              f                    f              f              f               f              f       | ",
+      "      ===          ===              ===            ===              ===          ===          ===       | ",
+      "          f              f                f              f              f              f                | ",
+      "    o o        o o          o o        o o          o o        o o          o o        o o              | ",
+      "  ===      ===      ===      ===      ===      ===      ===      ===      ===      ===      =======      | ",
+      "        f          f            f          f            f          f            f          f            | ",
+      "  ===========   =========   =========   ==========   =========   =========   =========   ============   | "
+    ]
+  },
+  {
+    name:'深海珊瑚', theme:'water', time:380,
+    map:[
+      "                                                                                                            ",
+      "   o o o      B B B B      ? M ?         o o o o         ^ ^ ^         B B B B B        o o o o           | ",
+      "             o o o o            f                  f             o o o o o o          f                  | ",
+      "  S    ===            ===        M  ===     f     ===     f     ===              ===          ===        | ",
+      "          f       f              f        f          f  f          f       f          f       f         | ",
+      "     ===        ===        ===       ===       ===       ===       ===       ===       ===     ===       | ",
+      "        f            f          f          f         f          f          f          f                 | ",
+      "  o o        o o         o o         o o         o o        o o         o o         o o        o o       | ",
+      "  ===      ===       ===       ===       ===       ===      ===       ===       ===       ===========    | ",
+      "      f          f          f         f          f         f          f          f          f           | ",
+      "  ==========   ========   =========   =========   =========  ========   =========   =========  =======   | "
+    ]
+  },
+  {
+    name:'雲端跳台', theme:'sky', time:340,
+    map:[
+      "                                                                                                       ",
+      "         C                  C                    C                      C                              ",
+      "      o o o          ? M ?           o o o              ^             o o o o                          |",
+      "                                                                                                      |",
+      "  S         o o          f          o o o         f          o o            o o o                     |",
+      "  ====     ====     ===      ====      ====     ===     ====      ====    ===     ====      =====      |",
+      "                                                                          H                           |",
+      "              o          o o          f         o o          o          f        o o                 |",
+      "       ===       ====        ===          ====       ===        ====        ===       ====            |",
+      "                                                                                                      |",
+      "    f          o          f         o o          f         o          o o          f                 |",
+      "   =====     =====      =====      =====       =====      =====     =====       =====      ========    |"
+    ]
+  },
+  {
+    name:'天空之城', theme:'sky', time:360,
+    map:[
+      "                                                                                                            ",
+      "    o o o o            ? ? ?              o o o o             ^ ^               o o o o                    | ",
+      "                                                                                                          | ",
+      "  S       o o      H              o o o       V         o o o      H            o o o        V            | ",
+      "  =====          ====        ======        ====      =====      ====        ======       =====           | ",
+      "                                                                                                          | ",
+      "        f              o o          f             o o          f             o o          f               | ",
+      "      ====        =====        =====        =====        =====        =====        =====        =====     | ",
+      "                                                                                                          | ",
+      "   f         J         f        J          f        J          f        J          f        J            | ",
+      "  =====    =====     =====     =====     =====     =====     =====     =====     =====     ==========      | "
+    ]
+  },
+  {
+    name:'雪地冒險', theme:'snow', time:360,
+    map:[
+      "                                                                                                       ",
+      "  o o o o      B B B B B      o o o o      ? M ?           o o o o o                                    ",
+      "             o o o o                                                       B B B B                     ",
+      "        ?                    B B B B B          ^              o o o o o                              |",
+      "                  o o                  c               o o o           j          o o                |",
+      "     ===                  ===            J         ===              ===                    ===        |",
+      "              o o o                 g                       g  c                  j                   |",
+      "   S    ===          ===     ===           ===        ===          ===       ===          g           |",
+      "                                                                                                      |",
+      "       g          c g          j           g            c  g           j            g  c             |",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    ]
+  },
+  {
+    name:'冰雪洞窟', theme:'snow', time:380,
+    map:[
+      "                                                                                                            ",
+      "    o o o o       B B B B        ? ? ?            o o o o          ^ ^            B B B B B               | ",
+      "                 o o o o                                                       o o o o o o               | ",
+      "  S      ===              ===       M       ===              ===          ===            ===            | ",
+      "                  c                       j         c c                          j          c           | ",
+      "      ===    ssss   ===              ===      ssss      ===              ===      ssss     ===          | ",
+      "              g                f              g                  f               g                      | ",
+      "         j            g  J         g  c            j        J         g  c            j       g          | ",
+      "XXXXX  XXXXX  XXXXXXX  XXXXXX  XXXXX  XXXXXX  XXXXXX  XXXXX  XXXXXXX  XXXXXX  XXXXX  XXXXXX  XXXXXXXXXXXXXX",
+      "XXXXX  XXXXX  XXXXXXX  XXXXXX  XXXXX  XXXXXX  XXXXXX  XXXXX  XXXXXXX  XXXXXX  XXXXX  XXXXXX  XXXXXXXXXXXXXX"
+    ]
+  },
+  {
+    name:'沙漠神殿', theme:'desert', time:400,
+    map:[
+      "                                                                                                                  ",
+      "   o o o      B B B B      ? M ?         o o o o         ^ ^ ^         B B B B B        o o o o                  |",
+      "             o o o o                                       T                  o o o o o o            T          |",
+      "  S    ===            ===        M  ===          ===     X     ===              ===          ===   ===         |",
+      "             g                        c                XXX           j                  f          g            |",
+      "     ===   ssss   ===             ===    ssss   ===           ===   ssss   ===           ===   ssss  ===       |",
+      "                            H                                              H                                    |",
+      "   g         j         g     c         j         g  c         g         j         g  j         g       c       |",
+      "                                                                                                                |",
+      "       f             f              f               f              f               f              f           |",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    ]
+  },
+  {
+    name:'魔王城堡', theme:'boss', time:300,
+    map:[
+      "                                                                              ",
+      "     o o o o o                          ^ ^ ^                  o o o o o       ",
+      "                      B B B B B B B B B B B B                                 ",
+      "   S      J         o o o o o          o o o o o        J          o o        ",
+      "                                                                              ",
+      "       o o       ===========         ===========       o o                   ",
+      "                                                                            | ",
+      "    ===                                                       ===           | ",
+      "                          @                                                 | ",
+      "                                                                            | ",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     ]
   }
 ];
 
-// =============================================
-// 狀態
-// =============================================
-var gs = {
-  stars:0, blocks:0, streak:0, maxStreak:0,
-  lastDate:'', dailyDone:false, dailyDate:'', dailyLearned:0,
-  levelProgress:{}, learned:{}, wrongWords:[]
+/* ========================= 主題配色 ========================= */
+var THEMES={
+  grass:{ sky1:'#7ec0ee', sky2:'#c8eaff', ground:'#7a4f2a', groundTop:'#4caf50', brick:'#c0703a',
+          accent:'#388e3c', hill:'#9ccc65', cloud:'#ffffff' },
+  cave: { sky1:'#1a1030', sky2:'#2d1b4e', ground:'#3a2f4a', groundTop:'#6b5b8a', brick:'#5a4a6a',
+          accent:'#8a6db5', hill:'#241838', cloud:'#3a2f4a' },
+  sky:  { sky1:'#5b8dd9', sky2:'#a8d0ff', ground:'#e0e8f5', groundTop:'#ffffff', brick:'#c5d4ee',
+          accent:'#9ab8e8', hill:'#cfe2ff', cloud:'#ffffff' },
+  castle:{ sky1:'#2a0a18', sky2:'#5a1530', ground:'#3a2030', groundTop:'#7a3050', brick:'#6a2a40',
+          accent:'#a04060', hill:'#3a1020', cloud:'#5a2030' },
+  forest:{ sky1:'#2d5a3d', sky2:'#7fc99a', ground:'#4a3520', groundTop:'#5d9c3f', brick:'#8a6a3a',
+          accent:'#2e7d32', hill:'#3a6b48', cloud:'#cfe8d5' },
+  water:{ sky1:'#0a3a6b', sky2:'#2a7fb5', ground:'#1a4a6a', groundTop:'#3a8ab5', brick:'#2a6a8a',
+          accent:'#5ac8e8', hill:'#15405f', cloud:'#7fd8f0', underwater:true },
+  snow: { sky1:'#8ab0d8', sky2:'#dcebf7', ground:'#7a8a9a', groundTop:'#f0f8ff', brick:'#a5b5c5',
+          accent:'#c5dcf0', hill:'#b8d0e8', cloud:'#ffffff', slippery:true },
+  desert:{ sky1:'#e8a850', sky2:'#ffe0a8', ground:'#9c6b35', groundTop:'#e8b86a', brick:'#c08840',
+          accent:'#d49a4a', hill:'#d4a860', cloud:'#fff0d8' },
+  boss: { sky1:'#1a0510', sky2:'#4a0a25', ground:'#2a0a18', groundTop:'#8a1535', brick:'#5a0f28',
+          accent:'#ff2a5a', hill:'#2a0512', cloud:'#4a0a20' }
 };
 
-var sess = {
-  words:[], idx:0, correct:0, lives:3,
-  building:[], hintLv:0, isDaily:false, isReview:false,
-  levelId:'', worldId:0
-};
+/* ========================= 角色 ========================= */
+var CHARACTERS=[
+  {id:'pobby', name:'波比', emoji:'🐹', body:'#f7c873', bodyBig:'#f5b942', ear:'#f7a9c0', foot:'#e89a4a', desc:'勇敢的小倉鼠'},
+  {id:'mochi', name:'麻吉', emoji:'🐱', body:'#d8d8e0', bodyBig:'#c5c5d2', ear:'#f7b8c8', foot:'#b5b5c2', desc:'敏捷的小貓咪'},
+  {id:'coco',  name:'可可', emoji:'🐰', body:'#fff0e8', bodyBig:'#f5e0d2', ear:'#f7b8c8', foot:'#e8d0c0', desc:'會跳的小兔子'},
+  {id:'kuma',  name:'熊熊', emoji:'🐻', body:'#c89456', bodyBig:'#b07a3a', ear:'#8a5a2a', foot:'#8a5a2a', desc:'力氣大的小熊'},
+  {id:'pengu', name:'波波', emoji:'🐧', body:'#3a4a5a', bodyBig:'#2a3a4a', ear:'#ffb84d', foot:'#ffb84d', desc:'滑溜的小企鵝'},
+  {id:'froggy',name:'呱呱', emoji:'🐸', body:'#7ac85a', bodyBig:'#5da83f', ear:'#f7e84d', foot:'#5da83f', desc:'彈跳力滿點'}
+];
+var charIndex=0;
+function curChar(){ return CHARACTERS[charIndex]; }
+if(save && typeof save.charIndex==='number' && save.charIndex>=0 && save.charIndex<CHARACTERS.length) charIndex=save.charIndex;
 
-var curWord = null;
+/* ========================= 全域狀態 ========================= */
+var state='menu';
+var keys={left:false,right:false,jump:false,run:false};
+var jumpHeld=false, jumpJustPressed=false;
+var cam={x:0,y:0};
+var lvl=null, theme=null, levelIndex=0, mapW=0, mapH=0, grid=null;
+var player=null, enemies=[], coins=[], items=[], blocks=[], spikes=[], flag=null;
+var movers=[], pipes=[], springs=[], boss=null;
+var particles=[], floaters=[];
+var lives=3, coinCount=0, timeLeft=0, frame=0, shake=0;
+var levelDone=false, doneTimer=0, isWin=false;
+var bgClouds=[], bgHills=[];
 
-// =============================================
-// 存取
-// =============================================
-function save(){
-  try{ localStorage.setItem('eg_v3', JSON.stringify(gs)); }catch(e){}
+/* ========================= 工具 ========================= */
+function rand(a,b){ return a+Math.random()*(b-a); }
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function flash(t){ elFlash.textContent=t; elFlash.classList.remove('show'); void elFlash.offsetWidth; elFlash.classList.add('show'); }
+function addFloat(x,y,txt,color){ floaters.push({x:x,y:y,txt:txt,color:color||'#fff',life:50,vy:-1.2}); }
+function addParticles(x,y,color,n,spread){
+  n=n||8; spread=spread||4;
+  for(var i=0;i<n;i++){
+    particles.push({x:x,y:y,vx:rand(-spread,spread),vy:rand(-spread,1),
+      life:rand(20,40),color:color,size:rand(2,5)});
+  }
 }
-function load(){
-  try{
-    var d = localStorage.getItem('eg_v3');
-    if(d){ var p=JSON.parse(d); for(var k in p) gs[k]=p[k]; }
-  }catch(e){}
-}
 
-function today(){
-  var n=new Date();
-  return n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate();
-}
+/* ========================= 載入關卡 ========================= */
+function loadLevel(idx){
+  levelIndex=idx;
+  lvl=LEVELS[idx];
+  theme=THEMES[lvl.theme]||THEMES.grass;
+  timeLeft=lvl.time;
+  coinCount=0;
+  frame=0; shake=0; levelDone=false; doneTimer=0; isWin=false;
+  enemies=[]; coins=[]; items=[]; blocks=[]; spikes=[]; particles=[]; floaters=[];
+  movers=[]; pipes=[]; springs=[]; boss=null;
+  flag=null;
 
-function checkStreak(){
-  if(!gs.lastDate) return;
-  var last=new Date(gs.lastDate.replace(/-/g,'/'));
-  var now=new Date(today().replace(/-/g,'/'));
-  var diff=Math.round((now-last)/86400000);
-  if(diff>=2) gs.streak=0;
-}
+  var rows=lvl.map;
+  mapH=rows.length;
+  mapW=0;
+  for(var r=0;r<rows.length;r++){ if(rows[r].length>mapW) mapW=rows[r].length; }
 
-// =============================================
-// 畫面切換（核心修復點）
-// =============================================
-var allPages = ['pgTitle','pgHub','pgGame','pgWord','pgStats'];
-
-function showPg(id){
-  for(var i=0;i<allPages.length;i++){
-    var el = document.getElementById(allPages[i]);
-    if(el){
-      el.className = 'pg' + (allPages[i]===id ? ' on' : '');
+  // grid: 0空 1實心 2磚 3問號 (內容) ...  用物件陣列描述每格
+  grid=[];
+  for(var y=0;y<mapH;y++){
+    grid[y]=[];
+    for(var x=0;x<mapW;x++){
+      var ch=rows[y][x]||' ';
+      grid[y][x]=tileType(ch);
+      spawnFromChar(ch,x,y);
     }
   }
+  // 玩家起點
+  if(!player) player={};
+  player.w=TILE*0.7; player.h=TILE*0.86;
+  player.big=false; player.invuln=0; player.star=0;
+  player.vx=0; player.vy=0; player.onGround=false; player.facing=1;
+  player.coyote=0; player.jumpBuf=0; player.jumpFrames=0; player.dead=false;
+  player.deadTimer=0; player.anim=0; player.win=false;
+  // 找 S
+  var sx=1,sy=mapH-3;
+  for(var yy=0;yy<mapH;yy++) for(var xx=0;xx<mapW;xx++){ if((rows[yy][xx]||' ')==='S'){ sx=xx; sy=yy; } }
+  player.x=sx*TILE; player.y=sy*TILE - (player.h-TILE);
+  applyBigSize();
+
+  buildBackground();
+  cam.x=0; cam.y=0;
+  updateHUD();
 }
 
-function showHub(){
-  showPg('pgHub');
-  document.getElementById('bnav').style.display='flex';
-  setBnav('bnHub');
-  renderHub();
+function tileType(ch){
+  if(ch==='X'||ch==='=') return 1;       // 實心
+  if(ch==='B') return 2;                 // 可破壞磚
+  if(ch==='?'||ch==='M'||ch==='^') return 3; // 問號磚（未敲）
+  if(ch==='p') return 4;                 // 穿越平台
+  if(ch==='T'||ch==='I') return 1;       // 水管（實心可站可擋）
+  return 0;
+}
+function spawnFromChar(ch,x,y){
+  var px=x*TILE, py=y*TILE;
+  if(ch==='o') coins.push({x:px+TILE*0.2,y:py+TILE*0.15,w:TILE*0.6,h:TILE*0.7,taken:false,anim:Math.random()*6});
+  else if(ch==='g') enemies.push(mkEnemy('walk',px,py));
+  else if(ch==='f') enemies.push(mkEnemy('fly',px,py));
+  else if(ch==='j') enemies.push(mkEnemy('jump',px,py));   // 會跳的敵人
+  else if(ch==='c') enemies.push(mkEnemy('charge',px,py));  // 衝刺殼怪
+  else if(ch==='s') spikes.push({x:px,y:py+TILE*0.5,w:TILE,h:TILE*0.5});
+  else if(ch==='?') blocks.push({x:px,y:py,type:'coin',used:false,bump:0});
+  else if(ch==='M') blocks.push({x:px,y:py,type:'mushroom',used:false,bump:0});
+  else if(ch==='^') blocks.push({x:px,y:py,type:'star',used:false,bump:0});
+  else if(ch==='B') blocks.push({x:px,y:py,type:'brick',used:false,bump:0});
+  else if(ch==='J') springs.push({x:px+TILE*0.1,y:py+TILE*0.55,w:TILE*0.8,h:TILE*0.45,comp:0});
+  else if(ch==='H') movers.push({kind:'h',x:px,y:py+TILE*0.35,w:TILE*1.6,h:TILE*0.4,ox:px,oy:py+TILE*0.35,t:Math.random()*6,range:TILE*2.4,vx:0,vy:0,px:px,py:py+TILE*0.35});
+  else if(ch==='V') movers.push({kind:'v',x:px,y:py,w:TILE*1.4,h:TILE*0.4,ox:px,oy:py,t:Math.random()*6,range:TILE*2.2,vx:0,vy:0,px:px,py:py});
+  else if(ch==='T'){ pipes.push({x:px,y:py,spawned:false}); } // 水管頂（會吐敵人）
+  else if(ch==='@'){ spawnBoss(px,py); }
+  else if(ch==='|'){ if(!flag) flag={x:px+TILE*0.4,y:py,reached:false}; }
+}
+function mkEnemy(kind,x,y){
+  if(kind==='fly'){
+    return {kind:'fly',x:x,y:y,w:TILE*0.8,h:TILE*0.7,vx:0,vy:0,
+      baseY:y, t:Math.random()*6, dir:-1, dead:false, deadTimer:0, squash:0, anim:0};
+  }
+  if(kind==='jump'){
+    return {kind:'jump',x:x,y:y+TILE*0.14,w:TILE*0.82,h:TILE*0.82,vx:-0.6,vy:0,
+      onGround:false, dead:false, deadTimer:0, squash:0, anim:0, jumpCd:rand(40,90)};
+  }
+  if(kind==='charge'){
+    return {kind:'charge',x:x,y:y+TILE*0.2,w:TILE*0.86,h:TILE*0.7,vx:-1.0,vy:0,
+      onGround:false, dead:false, deadTimer:0, squash:0, anim:0, shell:false, shellTimer:0};
+  }
+  return {kind:'walk',x:x,y:y+TILE*0.14,w:TILE*0.8,h:TILE*0.86,vx:-1.1,vy:0,
+    onGround:false, dead:false, deadTimer:0, squash:0, anim:0};
+}
+function spawnBoss(px,py){
+  boss={x:px,y:py,w:TILE*1.8,h:TILE*1.7,vx:1.4,vy:0,hp:3,maxhp:3,
+    state:'walk', t:0, hurtT:0, stompCd:0, dead:false, deadTimer:0,
+    baseY:py, anim:0, jumpCd:120};
+}
+function applyBigSize(){
+  var feet=player.y+player.h;
+  player.h = player.big? TILE*1.5 : TILE*0.86;
+  player.w = player.big? TILE*0.78 : TILE*0.7;
+  player.y = feet-player.h;
 }
 
-function setBnav(activeId){
-  var bns = ['bnHub','bnWord','bnRev','bnStats'];
-  for(var i=0;i<bns.length;i++){
-    var b = document.getElementById(bns[i]);
-    if(b) b.className = 'bn' + (bns[i]===activeId?' on':'');
+/* ========================= 背景 ========================= */
+function buildBackground(){
+  bgClouds=[]; bgHills=[];
+  for(var i=0;i<8;i++){
+    bgClouds.push({x:rand(0,mapW*TILE),y:rand(30,VH*0.4),s:rand(0.6,1.3),sp:rand(0.1,0.3)});
+  }
+  for(var h=0;h<Math.ceil(mapW*TILE/300)+2;h++){
+    bgHills.push({x:h*300+rand(-60,60),r:rand(90,170)});
   }
 }
 
-// =============================================
-// 標題畫面
-// =============================================
-function initTitle(){
-  // 星星
-  var bg = document.getElementById('tStars');
-  for(var i=0;i<35;i++){
-    var s=document.createElement('div');
-    s.className='t-star';
-    var sz=Math.random()*2.5+0.8;
-    s.style.cssText='left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;width:'+sz+'px;height:'+sz+'px;opacity:'+(Math.random()*0.6+0.2);
-    bg.appendChild(s);
+/* ========================= 碰撞輔助 ========================= */
+function solidAt(tx,ty){
+  if(ty<0) return false;
+  if(tx<0||tx>=mapW||ty>=mapH) return (tx<0||tx>=mapW); // 左右牆，底下無
+  var t=grid[ty][tx];
+  return t===1||t===2||t===3;
+}
+function rectsOverlap(a,b){
+  return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y;
+}
+
+/* ====== 玩家對地圖碰撞（分軸解算）====== */
+function movePlayerX(dx){
+  player.x+=dx;
+  var top=Math.floor(player.y/TILE);
+  var bot=Math.floor((player.y+player.h-1)/TILE);
+  if(dx>0){
+    var rcol=Math.floor((player.x+player.w)/TILE);
+    for(var y=top;y<=bot;y++){ if(solidAt(rcol,y)){ player.x=rcol*TILE-player.w-0.01; player.vx=0; break; } }
+  }else if(dx<0){
+    var lcol=Math.floor(player.x/TILE);
+    for(var y2=top;y2<=bot;y2++){ if(solidAt(lcol,y2)){ player.x=(lcol+1)*TILE+0.01; player.vx=0; break; } }
   }
-  // 更新個人資料顯示
-  document.getElementById('tPstats').textContent='🔥 '+gs.streak+' 天連續・⭐ '+gs.totalStarsDisplay();
 }
-
-gs.totalStarsDisplay = function(){ return gs.stars; };
-
-// =============================================
-// HUB
-// =============================================
-function renderHub(){
-  document.getElementById('hStars').textContent = gs.stars;
-  document.getElementById('hBlocks').textContent = gs.blocks;
-  document.getElementById('hStreak').textContent = gs.streak;
-
-  var titles=['英文探險新手','英文探險學徒','英文探險騎士','英文探險大師'];
-  var lv = Math.min(Math.floor(gs.stars/100), 3);
-  document.getElementById('hLv').textContent = '⚔️ '+titles[lv];
-
-  var next7 = 7-(gs.streak%7||7);
-  document.getElementById('hStreakLbl').textContent =
-    gs.streak===0 ? '今天就開始你的連續紀錄！' : '再'+next7+'天獲得特別獎勵！';
-
-  renderDailyCard();
-  renderWorlds();
-  updateRevBadge();
-}
-
-function renderDailyCard(){
-  var td = today();
-  var plan = getDailyPlan(td);
-  var done = gs.dailyDate===td && gs.dailyDone;
-  var prog = gs.dailyDate===td ? Math.min(gs.dailyLearned/plan.length,1) : 0;
-
-  document.getElementById('dcBar').style.width = (prog*100)+'%';
-  document.getElementById('dcMeta').textContent = (gs.dailyDate===td?gs.dailyLearned:0)+'/'+plan.length;
-  document.getElementById('dcTitle').textContent = done ? '✅ 今日任務已完成！' : '今日英文探險';
-  var tag = document.getElementById('dcTag');
-  tag.textContent = done ? '已完成' : '進行中';
-  tag.className = 'dc-tag'+(done?' done':'');
-}
-
-function getDailyPlan(dateStr){
-  var seed=0;
-  for(var i=0;i<dateStr.length;i++) seed+=dateStr.charCodeAt(i);
-  var all=[];
-  for(var w=0;w<WORLDS.length;w++){
-    for(var l=0;l<WORLDS[w].levels.length;l++){
-      var wds=WORLDS[w].levels[l].words;
-      for(var k=0;k<wds.length;k++){
-        all.push({en:wds[k].en,zh:wds[k].zh,img:wds[k].img,s:wds[k].s,worldId:WORLDS[w].id,levelId:WORLDS[w].levels[l].id});
+function movePlayerY(dy){
+  player.y+=dy;
+  var left=Math.floor(player.x/TILE);
+  var right=Math.floor((player.x+player.w-1)/TILE);
+  if(dy>0){ // 下落
+    var brow=Math.floor((player.y+player.h)/TILE);
+    for(var x=left;x<=right;x++){ if(solidAt(x,brow)){ player.y=brow*TILE-player.h-0.01; player.vy=0; player.onGround=true; return; } }
+    player.onGround=false;
+  }else if(dy<0){ // 上升，撞頂
+    var trow=Math.floor(player.y/TILE);
+    for(var x2=left;x2<=right;x2++){
+      if(solidAt(x2,trow)){
+        player.y=(trow+1)*TILE+0.01; player.vy=0;
+        hitBlockFromBelow(x2,trow);
+        break;
       }
     }
   }
-  // 優先老師課堂
-  var prio=[], rest=[];
-  for(var i=0;i<all.length;i++){
-    if(all[i].worldId===5) prio.push(all[i]);
-    else rest.push(all[i]);
-  }
-  var pool=prio.concat(rest);
-  var chosen=[], idx=seed;
-  while(chosen.length<5 && chosen.length<pool.length){
-    idx=(idx*1103515245+12345)&0x7fffffff;
-    var pick=pool[idx%pool.length];
-    var dup=false;
-    for(var i=0;i<chosen.length;i++) if(chosen[i].en===pick.en){dup=true;break;}
-    if(!dup) chosen.push(pick);
-  }
-  return chosen;
 }
-
-function renderWorlds(){
-  var el = document.getElementById('worldList');
-  el.innerHTML='';
-  for(var wi=0;wi<WORLDS.length;wi++){
-    var world=WORLDS[wi];
-    var done=0, total=world.levels.length;
-    for(var li=0;li<world.levels.length;li++){
-      if(gs.levelProgress[world.levels[li].id]&&gs.levelProgress[world.levels[li].id].completed) done++;
-    }
-    var pct=Math.round((done/total)*100);
-    var unlocked=(wi===0)||(gs.levelProgress[WORLDS[wi-1].levels[WORLDS[wi-1].levels.length-1].id]&&gs.levelProgress[WORLDS[wi-1].levels[WORLDS[wi-1].levels.length-1].id].completed);
-
-    var item=document.createElement('div');
-    item.className='world-item'+(unlocked?'':' locked');
-    item.innerHTML='<div class="wi-icon">'+world.icon+'</div>'+
-      '<div class="wi-info">'+
-        '<div class="wi-name">'+world.id+'. '+world.name+'</div>'+
-        '<div class="wi-desc">'+world.levels.length*10+' 個單字・'+world.levels.length+' 關</div>'+
-        '<div class="wi-pbar"><div class="wi-pfill" style="width:'+pct+'%;background:'+world.color+'"></div></div>'+
-      '</div>'+
-      '<div class="wi-right">'+
-        (unlocked?'<div class="wi-stars">'+(done===total?'⭐⭐⭐':'☆☆☆')+'</div><div class="wi-lv">'+done+'/'+total+'</div>':'<div style="font-size:28px">🔒</div>')+
-      '</div>';
-    if(unlocked){
-      (function(w){ item.onclick=function(){ pickLevel(w); }; })(world);
-    }
-    el.appendChild(item);
-  }
-}
-
-function pickLevel(world){
-  // 選第一個未完成的關卡
-  for(var i=0;i<world.levels.length;i++){
-    var ok=(i===0)||(gs.levelProgress[world.levels[i-1].id]&&gs.levelProgress[world.levels[i-1].id].completed);
-    if(ok&&!(gs.levelProgress[world.levels[i].id]&&gs.levelProgress[world.levels[i].id].completed)){
-      startLevel(world.id, world.levels[i].id);
+function hitBlockFromBelow(tx,ty){
+  // 找該格對應 block
+  for(var i=0;i<blocks.length;i++){
+    var b=blocks[i];
+    if(Math.floor(b.x/TILE)===tx && Math.floor(b.y/TILE)===ty && !b.used){
+      b.bump=8;
+      if(b.type==='brick'){
+        if(player.big){
+          // 大波比打碎磚
+          grid[ty][tx]=0; b.used=true; b.broken=true;
+          sfxBrick(); addParticles(b.x+TILE/2,b.y+TILE/2,theme.brick,10,5); shake=4;
+        }else{ sfxBump(); }
+      }else if(b.type==='coin'){
+        b.used=true; grid[ty][tx]=1;
+        coinCount++; addFloat(b.x+TILE/2,b.y,'+1','#ffd166'); sfxCoin(); updateHUD();
+        addParticles(b.x+TILE/2,b.y,'#ffd166',6,3);
+      }else if(b.type==='mushroom'){
+        b.used=true; grid[ty][tx]=1;
+        items.push({kind:'mushroom',x:b.x,y:b.y-TILE,w:TILE*0.8,h:TILE*0.8,vx:1.4,vy:0,emerge:TILE,onGround:false});
+        sfxBump();
+      }else if(b.type==='star'){
+        b.used=true; grid[ty][tx]=1;
+        items.push({kind:'star',x:b.x,y:b.y-TILE,w:TILE*0.78,h:TILE*0.78,vx:1.8,vy:-4,emerge:TILE,onGround:false,anim:0});
+        sfxBump();
+      }
       return;
     }
   }
-  // 全過了就從頭
-  startLevel(world.id, world.levels[0].id);
+  sfxBump();
 }
 
-function updateRevBadge(){
-  var cnt=gs.wrongWords.length;
-  var badge=document.getElementById('revBadge');
-  if(cnt>0){ badge.style.display='block'; badge.textContent=cnt; }
-  else badge.style.display='none';
-}
-
-// =============================================
-// 每日任務
-// =============================================
-function startDaily(){
-  var td=today();
-  if(gs.dailyDate===td && gs.dailyDone){
-    alert('今天的任務已完成！明天再來挑戰吧 🌟'); return;
+/* ====== 通用實體 vs 地圖（敵人、道具）====== */
+function moveEntityX(e,dx){
+  e.x+=dx;
+  var top=Math.floor(e.y/TILE), bot=Math.floor((e.y+e.h-1)/TILE);
+  if(dx>0){
+    var rc=Math.floor((e.x+e.w)/TILE);
+    for(var y=top;y<=bot;y++){ if(solidAt(rc,y)){ e.x=rc*TILE-e.w-0.01; e.vx=-Math.abs(e.vx); e.hitWall=true; return; } }
+  }else if(dx<0){
+    var lc=Math.floor(e.x/TILE);
+    for(var y2=top;y2<=bot;y2++){ if(solidAt(lc,y2)){ e.x=(lc+1)*TILE+0.01; e.vx=Math.abs(e.vx); e.hitWall=true; return; } }
   }
-  var plan=getDailyPlan(td);
-  gs.dailyDate=td; gs.dailyLearned=0;
-  startSession(plan, true, false, 0, '');
 }
-
-// =============================================
-// 關卡
-// =============================================
-function startLevel(worldId, levelId){
-  var world=null;
-  for(var i=0;i<WORLDS.length;i++) if(WORLDS[i].id===worldId){world=WORLDS[i];break;}
-  var level=null;
-  for(var i=0;i<world.levels.length;i++) if(world.levels[i].id===levelId){level=world.levels[i];break;}
-  var words=[];
-  for(var i=0;i<level.words.length;i++){
-    words.push({en:level.words[i].en,zh:level.words[i].zh,img:level.words[i].img,s:level.words[i].s,worldId:worldId,levelId:levelId});
-  }
-  startSession(words, false, false, worldId, levelId);
-}
-
-function startReview(){
-  if(gs.wrongWords.length===0){ alert('目前沒有需要複習的題目！繼續加油 ✨'); return; }
-  var rev=gs.wrongWords.slice(0,10);
-  startSession(rev, false, true, 0, '');
-}
-
-function startSession(words, isDaily, isReview, worldId, levelId){
-  sess.words=words; sess.idx=0; sess.correct=0; sess.lives=3;
-  sess.building=new Array(words.length).fill(null);
-  sess.hintLv=0; sess.isDaily=isDaily; sess.isReview=isReview;
-  sess.worldId=worldId; sess.levelId=levelId;
-
-  showPg('pgGame');
-  document.getElementById('bnav').style.display='none';
-
-  var world=null;
-  for(var i=0;i<WORLDS.length;i++) if(WORLDS[i].id===worldId){world=WORLDS[i];break;}
-  document.getElementById('gTitle').textContent = isDaily?'今日任務':isReview?'🔄 複習':((world?world.name:'英文探險'));
-  document.getElementById('revBanner').style.display = isReview?'block':'none';
-
-  initBlocks(words.length);
-  renderLives();
-  nextQ();
-}
-
-// =============================================
-// 積木
-// =============================================
-function initBlocks(count){
-  var el=document.getElementById('bzBlocks');
-  el.innerHTML='';
-  for(var i=0;i<count;i++){
-    var b=document.createElement('div');
-    b.className='blk empty'; b.id='b'+i;
-    el.appendChild(b);
-  }
-  document.getElementById('bzProg').textContent='🏗️ 0/'+count;
-}
-
-function addBlock(){
-  var idx=-1;
-  for(var i=0;i<sess.building.length;i++) if(!sess.building[i]){idx=i;break;}
-  if(idx===-1) return;
-  var types=['wood','stone','brick','gold','diamond'];
-  var t=types[Math.floor(Math.random()*types.length)];
-  sess.building[idx]=t;
-  var el=document.getElementById('b'+idx);
-  if(el){ el.className='blk '+t+' new'; }
-  var filled=0;
-  for(var i=0;i<sess.building.length;i++) if(sess.building[i]) filled++;
-  document.getElementById('bzProg').textContent='🏗️ '+filled+'/'+sess.building.length;
-}
-
-function renderLives(){
-  var hearts=document.querySelectorAll('.g-heart');
-  for(var i=0;i<hearts.length;i++){
-    hearts[i].className='g-heart'+(i>=sess.lives?' off':'');
+function moveEntityY(e,dy){
+  e.y+=dy;
+  var left=Math.floor(e.x/TILE), right=Math.floor((e.x+e.w-1)/TILE);
+  if(dy>0){
+    var br=Math.floor((e.y+e.h)/TILE);
+    for(var x=left;x<=right;x++){ if(solidAt(x,br)){ e.y=br*TILE-e.h-0.01; e.vy=0; e.onGround=true; return; } }
+    e.onGround=false;
+  }else if(dy<0){
+    var tr=Math.floor(e.y/TILE);
+    for(var x2=left;x2<=right;x2++){ if(solidAt(x2,tr)){ e.y=(tr+1)*TILE+0.01; e.vy=0; return; } }
   }
 }
 
-// =============================================
-// 題目
-// =============================================
-function nextQ(){
-  if(sess.idx>=sess.words.length){ endSess(); return; }
-  curWord=sess.words[sess.idx];
-  sess.hintLv=0;
-
-  document.getElementById('gSub').textContent='第'+(sess.idx+1)+'題 共'+sess.words.length+'題';
-
-  // 重設UI
-  document.getElementById('qImg').style.display='none';
-  document.getElementById('opts').style.display='none';
-  document.getElementById('opts').innerHTML='';
-  document.getElementById('spellArea').style.display='none';
-  document.getElementById('listenBtn').style.display='none';
-  document.getElementById('hintBox').style.display='none';
-  document.getElementById('hintBox').textContent='';
-
-  var qType = sess.idx % 5;
-  // 取干擾選項池
-  var pool=[];
-  for(var w=0;w<WORLDS.length;w++){
-    for(var l=0;l<WORLDS[w].levels.length;l++){
-      var wds=WORLDS[w].levels[l].words;
-      for(var k=0;k<wds.length;k++) pool.push(wds[k]);
-    }
-  }
-
-  var badge=document.getElementById('qBadge');
-  var qText=document.getElementById('qText');
-  var qHint=document.getElementById('qHintLbl');
-  var qImg=document.getElementById('qImg');
-
-  if(qType===0){
-    badge.className='q-badge rd'; badge.textContent='📖 看圖選字';
-    qImg.textContent=curWord.img; qImg.style.display='block';
-    qText.textContent='這是什麼？請選出正確的英文單字';
-    qHint.textContent='中文提示：'+curWord.zh;
-    renderOpts(pool,'en');
-  } else if(qType===1){
-    badge.className='q-badge li'; badge.textContent='🔊 聽音選字';
-    qImg.textContent=curWord.img; qImg.style.display='block';
-    qText.textContent='聽發音，選出正確的單字';
-    qHint.textContent='點喇叭聽發音';
-    document.getElementById('listenBtn').style.display='block';
-    renderOpts(pool,'both');
-    setTimeout(function(){ speak(curWord.en); }, 400);
-  } else if(qType===2){
-    badge.className='q-badge sp'; badge.textContent='✏️ 拼寫單字';
-    qImg.textContent=curWord.img; qImg.style.display='block';
-    qText.textContent='請拼出「'+curWord.zh+'」的英文';
-    qHint.textContent='共 '+curWord.en.length+' 個字母';
-    renderSpell();
-  } else if(qType===3) {
-    badge.className='q-badge rd'; badge.textContent='📖 句子填空';
-    qImg.style.display='none';
-    var blank=curWord.s.replace(new RegExp('\\b'+curWord.en+'\\b','gi'),'_____');
-    qText.textContent=blank;
-    qHint.textContent='提示：'+curWord.zh;
-    renderOpts(pool,'en');
-    document.getElementById('hintBtn').style.display='block';
-  } else {
-    // qType===4: Phonics 看色選字
-    badge.className='q-badge rd'; badge.textContent='🎨 Phonics 拼音';
-    qImg.style.display='none';
-    qText.innerHTML='這個單字是什麼意思？<br><div style="margin:10px 0;font-size:26px;letter-spacing:2px;text-align:center">'+getPhHtml(curWord.en)+'</div><div style="font-size:11px;color:rgba(255,255,255,.4);text-align:center">'+getPhLegend(curWord.en)+'</div>';
-    qHint.textContent='顏色代表不同的發音規則，點字母可以聽發音！';
-    renderOpts(pool,'zh');
-    document.getElementById('hintBtn').style.display='block';
-  }
-}
-
-// =============================================
-// 選項
-// =============================================
-function renderOpts(pool, display){
-  var grid=document.getElementById('opts');
-  grid.innerHTML=''; grid.style.display='grid';
-
-  // 取3個干擾選項
-  var others=[];
-  var shuffled=pool.slice().sort(function(){return Math.random()-0.5;});
-  for(var i=0;i<shuffled.length&&others.length<3;i++){
-    if(shuffled[i].en!==curWord.en) others.push(shuffled[i]);
-  }
-  var all=[curWord].concat(others).sort(function(){return Math.random()-0.5;});
-
-  for(var i=0;i<all.length;i++){
-    var opt=all[i];
-    var btn=document.createElement('button');
-    btn.className='opt';
-    if(display==='en') btn.textContent=opt.en;
-    else if(display==='zh') btn.textContent=opt.zh;
-    else btn.innerHTML=opt.en+'<br><span style="font-size:11px;opacity:0.6">'+opt.zh+'</span>';
-    (function(o,b){
-      b.onclick=function(){
-        lockOpts();
-        onAns(o.en===curWord.en, b);
-      };
-    })(opt,btn);
-    grid.appendChild(btn);
-  }
-}
-
-function lockOpts(){
-  var btns=document.querySelectorAll('.opt');
-  for(var i=0;i<btns.length;i++) btns[i].onclick=null;
-}
-
-// =============================================
-// 拼寫
-// =============================================
-var spellIdx=0;
-
-function renderSpell(){
-  spellIdx=0;
-  var boxes=document.getElementById('spellBoxes');
-  var kb=document.getElementById('kb');
-  boxes.innerHTML=''; kb.innerHTML='';
-
-  for(var i=0;i<curWord.en.length;i++){
-    var b=document.createElement('div');
-    b.className='sbox'; b.id='sb'+i;
-    boxes.appendChild(b);
-  }
-
-  var rows=['qwertyuiop','asdfghjkl','zxcvbnm'];
-  for(var ri=0;ri<rows.length;ri++){
-    var row=document.createElement('div');
-    row.className='kb-row';
-    if(ri===2){
-      var del=document.createElement('button');
-      del.className='kk kdel'; del.textContent='⌫';
-      del.onclick=spellDel;
-      row.appendChild(del);
-    }
-    var letters=rows[ri].split('');
-    for(var ki=0;ki<letters.length;ki++){
-      (function(ch){
-        var k=document.createElement('button');
-        k.className='kk'; k.textContent=ch.toUpperCase();
-        k.onclick=function(){ spellAdd(ch); };
-        row.appendChild(k);
-      })(letters[ki]);
-    }
-    if(ri===2){
-      var ok=document.createElement('button');
-      ok.className='kk kok'; ok.textContent='✓';
-      ok.onclick=spellCheck;
-      row.appendChild(ok);
-    }
-    kb.appendChild(row);
-  }
-  document.getElementById('spellArea').style.display='block';
-}
-
-function spellAdd(ch){
-  if(spellIdx>=curWord.en.length) return;
-  var b=document.getElementById('sb'+spellIdx);
-  if(!b) return;
-  b.textContent=ch.toUpperCase(); b.className='sbox has';
-  spellIdx++;
-}
-
-function spellDel(){
-  if(spellIdx<=0) return;
-  spellIdx--;
-  var b=document.getElementById('sb'+spellIdx);
-  if(!b) return;
-  b.textContent=''; b.className='sbox';
-}
-
-function spellCheck(){
-  var input='';
-  for(var i=0;i<curWord.en.length;i++){
-    var b=document.getElementById('sb'+i);
-    input+=(b?b.textContent:'').toLowerCase();
-  }
-  var ok=(input===curWord.en.toLowerCase());
-  for(var i=0;i<curWord.en.length;i++){
-    var b=document.getElementById('sb'+i);
-    if(!b) continue;
-    if((b.textContent||'').toLowerCase()!==curWord.en[i].toLowerCase()){
-      b.className='sbox bad';
-    }
-  }
-  setTimeout(function(){ showResult(ok); }, 500);
-}
-
-// =============================================
-// 提示
-// =============================================
-function showHint(){
-  sess.hintLv++;
-  var box=document.getElementById('hintBox');
-  box.style.display='block';
-  if(sess.hintLv===1){
-    box.textContent='💡 提示：中文是「'+curWord.zh+'」';
-  } else if(sess.hintLv===2){
-    box.textContent='💡 提示：開頭字母是「'+curWord.en[0].toUpperCase()+'」，共 '+curWord.en.length+' 個字母';
-  } else {
-    box.textContent='💡 答案是：'+curWord.en+'（'+curWord.zh+'）';
-    document.getElementById('hintBtn').style.display='none';
-  }
-}
-
-// =============================================
-// 判斷
-// =============================================
-function onAns(ok, btn){
-  if(ok){
-    btn.className='opt ok';
-  } else {
-    btn.className='opt no';
-    // 標出正確答案
-    var btns=document.querySelectorAll('.opt');
-    for(var i=0;i<btns.length;i++){
-      if(btns[i].textContent.trim().indexOf(curWord.en)===0) btns[i].className='opt show';
-    }
-  }
-  setTimeout(function(){ showResult(ok); }, 700);
-}
-
-// =============================================
-// 結果
-// =============================================
-function showResult(ok){
-  document.getElementById('mEn').textContent=curWord.img+' '+curWord.en;
-  // Phonics 高亮
-  var phEl=document.getElementById('mPhonics');
-  var phLg=document.getElementById('mPhLegend');
-  if(phEl){ phEl.innerHTML=getPhHtml(curWord.en); }
-  if(phLg){ phLg.textContent=getPhLegend(curWord.en); }
-  document.getElementById('mZh').textContent=curWord.zh;
-  document.getElementById('mSent').textContent=curWord.s;
-
-  var ico=document.getElementById('mIco');
-  var ttl=document.getElementById('mTtl');
-  var rwds=document.getElementById('mRwds');
-  var btn=document.getElementById('mBtn');
-
-  if(ok){
-    ico.textContent='🎉'; ttl.textContent='答對了！'; ttl.className='m-title ok';
-    btn.className='m-btn ok'; btn.textContent='下一題 →';
-    gs.stars+=10; gs.blocks++;
-    sess.correct++;
-    if(sess.isDaily) gs.dailyLearned++;
-    // 記錄
-    if(!gs.learned[curWord.en]){
-      gs.learned[curWord.en]={en:curWord.en,zh:curWord.zh,img:curWord.img,s:curWord.s,cnt:0,mastered:false};
-    }
-    gs.learned[curWord.en].cnt++;
-    if(gs.learned[curWord.en].cnt>=3) gs.learned[curWord.en].mastered=true;
-    // 從錯題池移除
-    var newWrong=[];
-    for(var i=0;i<gs.wrongWords.length;i++) if(gs.wrongWords[i].en!==curWord.en) newWrong.push(gs.wrongWords[i]);
-    gs.wrongWords=newWrong;
-    addBlock();
-    rwds.innerHTML='<div class="m-rwd"><div class="m-rwd-ic">🧱</div><div class="m-rwd-tx">+1 積木</div></div>'+
-      '<div class="m-rwd"><div class="m-rwd-ic">⭐</div><div class="m-rwd-tx">+10 分</div></div>';
-    particles();
-  } else {
-    ico.textContent='😢'; ttl.textContent='再試一次！'; ttl.className='m-title no';
-    btn.className='m-btn no'; btn.textContent='繼續 →';
-    sess.lives=Math.max(0,sess.lives-1);
-    // 加入錯題池
-    var dup=false;
-    for(var i=0;i<gs.wrongWords.length;i++) if(gs.wrongWords[i].en===curWord.en){dup=true;break;}
-    if(!dup) gs.wrongWords.push({en:curWord.en,zh:curWord.zh,img:curWord.img,s:curWord.s,worldId:curWord.worldId||0,levelId:curWord.levelId||''});
-    rwds.innerHTML='<div class="m-rwd"><div class="m-rwd-ic">💡</div><div class="m-rwd-tx">記住：'+curWord.en+' = '+curWord.zh+'</div></div>';
-    renderLives();
-  }
-
-  sess.idx++;
-  speak(curWord.en);
-  save();
-  document.getElementById('ovResult').className='overlay on';
-}
-
-// =============================================
-// 結束
-// =============================================
-function endSess(){
-  var total=sess.words.length;
-  var stars=sess.correct>=Math.ceil(total*0.9)?3:sess.correct>=Math.ceil(total*0.7)?2:sess.correct>=Math.ceil(total*0.5)?1:0;
-
-  if(sess.levelId){
-    var prev=(gs.levelProgress[sess.levelId]&&gs.levelProgress[sess.levelId].stars)||0;
-    gs.levelProgress[sess.levelId]={completed:true,stars:Math.max(stars,prev)};
-  }
-
-  // 每日完成
-  if(sess.isDaily && gs.dailyLearned>=sess.words.length){
-    gs.dailyDone=true;
-    var td=today();
-    if(gs.lastDate!==td){
-      gs.streak++; gs.maxStreak=Math.max(gs.maxStreak,gs.streak); gs.lastDate=td;
-    }
-    gs.stars+=50;
-    save();
-    document.getElementById('ddStreak').textContent=gs.streak;
-    document.getElementById('ddS').textContent='+50';
-    document.getElementById('ddB').textContent='+'+sess.words.length;
-    document.getElementById('ddW').textContent='+'+gs.dailyLearned;
-    document.getElementById('ovDailyDone').className='overlay on';
+/* ========================= 更新：玩家 ========================= */
+function updatePlayer(){
+  if(player.win){
+    // 過關小動畫：往下滑/走
+    player.anim++;
     return;
   }
-
-  save();
-  document.getElementById('ldTtl').textContent=sess.isReview?'複習完成！':'關卡完成！';
-  document.getElementById('ldStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
-  document.getElementById('ldCorrect').textContent=sess.correct;
-  document.getElementById('ldBlocks').textContent=gs.blocks;
-  document.getElementById('ldWds').textContent=Object.keys(gs.learned).length;
-  document.getElementById('ovLevelDone').className='overlay on';
-}
-
-// =============================================
-// 單字本
-// =============================================
-function renderWordbook(){
-  var wds=Object.values(gs.learned);
-  document.getElementById('wbCnt').textContent=wds.length;
-  var grid=document.getElementById('wordGrid');
-  grid.innerHTML='';
-  if(wds.length===0){
-    grid.innerHTML='<div class="empty-msg">還沒有學習單字<br>快去開始冒險吧！🎮</div>';
+  if(player.dead){
+    player.deadTimer++;
+    player.vy+=GRAV;
+    player.y+=player.vy;
     return;
   }
-  for(var i=0;i<wds.length;i++){
-    var w=wds[i];
-    var tile=document.createElement('div');
-    tile.className='w-tile'+(w.mastered?' ms':'');
-    tile.innerHTML=(w.mastered?'<div class="w-ms-badge">⭐熟練</div>':'')+
-      '<div class="w-emoji">'+w.img+'</div>'+
-      '<div class="w-en">'+w.en+'</div>'+
-      '<div class="wph-seg" style="font-size:13px;margin:2px 0;min-height:18px"></div>'+
-      '<div class="w-zh">'+w.zh+'</div>'+
-      '<button class="w-play" type="button">🔊</button>';
-    var playBtn=tile.querySelector('.w-play');
-    (function(word){
-      playBtn.onclick=function(e){ e.stopPropagation(); speak(word.en); };
-      tile.onclick=function(){ speak(word.en); };
-      // Phonics 高亮
-      var phDiv=tile.querySelector('.wph-seg');
-      if(phDiv){ phDiv.innerHTML=getPhHtml(word.en); }
-    })(w);
-    grid.appendChild(tile);
+  var maxvx = keys.run? MAXVX_RUN : MAXVX_WALK;
+  var acc = MOVE * (keys.run?1.35:1);
+  var KICK=1.8; // 按下瞬間最低初速，消除起步延遲
+  if(keys.left){
+    player.vx-=acc; player.facing=-1;
+    if(player.vx>-KICK) player.vx=-KICK;        // 立刻有反應
+  }
+  if(keys.right){
+    player.vx+=acc; player.facing=1;
+    if(player.vx<KICK) player.vx=KICK;
+  }
+  if(!keys.left && !keys.right){ player.vx*=FRICTION; if(Math.abs(player.vx)<0.05) player.vx=0; }
+  player.vx=clamp(player.vx,-maxvx,maxvx);
+
+  // 跳躍：土狼+緩衝
+  if(player.onGround) player.coyote=COYOTE; else if(player.coyote>0) player.coyote--;
+  if(jumpJustPressed) player.jumpBuf=JUMP_BUFFER; else if(player.jumpBuf>0) player.jumpBuf--;
+
+  if(player.jumpBuf>0 && player.coyote>0){
+    player.vy=JUMP; player.onGround=false; player.coyote=0; player.jumpBuf=0;
+    player.jumpFrames=JUMP_HOLD_FRAMES; sfxJump();
+    addParticles(player.x+player.w/2,player.y+player.h,'#fff',5,2);
+  }
+  // 可變跳躍高度
+  if(player.jumpFrames>0 && jumpHeld && player.vy<0){ player.vy+=JUMP_HOLD; player.jumpFrames--; }
+  else player.jumpFrames=0;
+
+  player.vy+=GRAV;
+  if(player.vy>MAXFALL) player.vy=MAXFALL;
+
+  movePlayerX(player.vx);
+  movePlayerY(player.vy);
+
+  // 動畫計時
+  if(Math.abs(player.vx)>0.3 && player.onGround) player.anim+=Math.abs(player.vx)*0.15;
+  else player.anim=0;
+
+  if(player.invuln>0) player.invuln--;
+  if(player.star>0){ player.star--; if(player.star===0) flash(''); }
+
+  // 掉出地圖 → 死
+  if(player.y>mapH*TILE+80){ killPlayer(); }
+
+  // 旗桿
+  if(flag && !flag.reached){
+    var fr={x:flag.x,y:flag.y,w:TILE*0.4,h:mapH*TILE};
+    if(rectsOverlap(player,fr)){ winLevel(); }
   }
 }
 
-// =============================================
-// 統計
-// =============================================
-function renderStats(){
-  document.getElementById('stStreak').textContent=gs.maxStreak;
-  document.getElementById('stWords').textContent=Object.keys(gs.learned).length;
-  document.getElementById('stStars').textContent=gs.stars;
-  document.getElementById('stBlocks').textContent=gs.blocks;
-  var done=0;
-  for(var k in gs.levelProgress) if(gs.levelProgress[k]&&gs.levelProgress[k].completed) done++;
-  document.getElementById('stLevels').textContent=done;
-
-  var wc=Object.keys(gs.learned).length;
-  var achs=[
-    {ic:'🌱',nm:'第一步',got:wc>=1},
-    {ic:'📖',nm:'10單字',got:wc>=10},
-    {ic:'📚',nm:'50單字',got:wc>=50},
-    {ic:'🧠',nm:'單字大師',got:wc>=100},
-    {ic:'🔥',nm:'3天連續',got:gs.maxStreak>=3},
-    {ic:'🌟',nm:'7天連續',got:gs.maxStreak>=7},
-    {ic:'🏆',nm:'30天連續',got:gs.maxStreak>=30},
-    {ic:'💎',nm:'100天連續',got:gs.maxStreak>=100}
-  ];
-  var ag=document.getElementById('achGrid');
-  ag.innerHTML='';
-  for(var i=0;i<achs.length;i++){
-    var a=achs[i];
-    var d=document.createElement('div');
-    d.className='ach-item '+(a.got?'got':'nope');
-    d.innerHTML='<div class="ach-ic">'+a.ic+'</div><div class="ach-nm">'+a.nm+'</div>';
-    ag.appendChild(d);
+function killPlayer(){
+  if(player.dead||player.win) return;
+  if(player.big && player.invuln<=0){
+    player.big=false; applyBigSize(); player.invuln=80; sfxHurt(); shake=5;
+    addParticles(player.x+player.w/2,player.y+player.h/2,'#fff',12,5);
+    return;
   }
+  if(player.invuln>0 && !player.dead) { /* 受傷無敵中，無事 */ }
+  player.dead=true; player.deadTimer=0; player.vy=-9; sfxHurt();
+}
+function hardKill(){ // 掉坑/尖刺直接死（不縮小）
+  if(player.dead||player.win) return;
+  player.dead=true; player.deadTimer=0; player.vy=-9; sfxLose();
 }
 
-
-// =============================================
-// Phonics 輔助函數
-// =============================================
-var PH_MAP = {"family": [["f", "c2"], ["am", "c1"], ["i", "c1"], ["ly", "c2"]], "father": [["f", "c2"], ["a", "c1"], ["th", "c4"], ["er", "c2"]], "mother": [["m", "c2"], ["o", "c1"], ["th", "c4"], ["er", "c2"]], "brother": [["br", "c4"], ["o", "c1"], ["th", "c4"], ["er", "c2"]], "sister": [["s", "c2"], ["i", "c1"], ["st", "c4"], ["er", "c2"]], "grandpa": [["gr", "c4"], ["and", "c2"], ["pa", "c2"]], "grandma": [["gr", "c4"], ["and", "c2"], ["ma", "c2"]], "uncle": [["u", "c1"], ["n", "c2"], ["cle", "c2"]], "aunt": [["au", "c3"], ["nt", "c2"]], "baby": [["b", "c2"], ["a", "c3"], ["by", "c2"]], "house": [["h", "c2"], ["ou", "c3"], ["se", "c5"]], "room": [["r", "c2"], ["oo", "c3"], ["m", "c2"]], "bed": [["b", "c2"], ["e", "c1"], ["d", "c2"]], "door": [["d", "c2"], ["oo", "c3"], ["r", "c2"]], "window": [["w", "c2"], ["in", "c1"], ["dow", "c3"]], "table": [["t", "c2"], ["a", "c3"], ["ble", "c2"]], "chair": [["ch", "c4"], ["air", "c3"]], "lamp": [["l", "c2"], ["a", "c1"], ["mp", "c2"]], "clock": [["cl", "c4"], ["o", "c1"], ["ck", "c2"]], "mirror": [["m", "c2"], ["irr", "c3"], ["or", "c2"]], "sofa": [["s", "c2"], ["o", "c3"], ["fa", "c2"]], "kitchen": [["k", "c2"], ["i", "c1"], ["tch", "c4"], ["en", "c2"]], "bathroom": [["b", "c2"], ["ath", "c4"], ["r", "c2"], ["oom", "c3"]], "floor": [["fl", "c4"], ["oor", "c3"]], "wall": [["w", "c2"], ["a", "c1"], ["ll", "c2"]], "stairs": [["st", "c4"], ["air", "c3"], ["s", "c2"]], "key": [["k", "c2"], ["ey", "c3"]], "TV": [["T", "c2"], ["V", "c2"]], "garden": [["g", "c2"], ["ar", "c3"], ["den", "c2"]], "roof": [["r", "c2"], ["oo", "c3"], ["f", "c2"]], "apple": [["a", "c1"], ["pp", "c2"], ["le", "c5"]], "banana": [["b", "c2"], ["a", "c1"], ["nan", "c2"], ["a", "c1"]], "orange": [["o", "c1"], ["r", "c2"], ["ange", "c4"]], "grape": [["gr", "c4"], ["a", "c3"], ["pe", "c5"]], "strawberry": [["str", "c4"], ["aw", "c3"], ["ber", "c2"], ["ry", "c2"]], "watermelon": [["w", "c2"], ["a", "c1"], ["ter", "c2"], ["mel", "c1"], ["on", "c2"]], "lemon": [["l", "c2"], ["e", "c1"], ["mon", "c2"]], "cherry": [["ch", "c4"], ["err", "c1"], ["y", "c2"]], "mango": [["m", "c2"], ["an", "c1"], ["go", "c3"]], "peach": [["p", "c2"], ["ea", "c3"], ["ch", "c4"]], "rice": [["r", "c2"], ["i", "c3"], ["ce", "c5"]], "bread": [["br", "c4"], ["ea", "c3"], ["d", "c2"]], "egg": [["e", "c1"], ["gg", "c2"]], "fish": [["f", "c2"], ["i", "c1"], ["sh", "c4"]], "chicken": [["ch", "c4"], ["i", "c1"], ["ck", "c2"], ["en", "c2"]], "noodle": [["n", "c2"], ["oo", "c3"], ["dle", "c2"]], "soup": [["s", "c2"], ["ou", "c3"], ["p", "c2"]], "salad": [["s", "c2"], ["al", "c1"], ["ad", "c1"]], "pizza": [["p", "c2"], ["iz", "c1"], ["za", "c2"]], "cake": [["c", "c2"], ["a", "c3"], ["ke", "c5"]], "water": [["w", "c2"], ["a", "c1"], ["ter", "c2"]], "milk": [["m", "c2"], ["i", "c1"], ["lk", "c2"]], "juice": [["j", "c2"], ["ui", "c3"], ["ce", "c5"]], "tea": [["t", "c2"], ["ea", "c3"]], "coffee": [["c", "c2"], ["off", "c1"], ["ee", "c3"]], "sweet": [["sw", "c4"], ["ee", "c3"], ["t", "c2"]], "sour": [["s", "c2"], ["our", "c3"]], "hot": [["h", "c2"], ["o", "c1"], ["t", "c2"]], "cold": [["c", "c2"], ["o", "c3"], ["ld", "c2"]], "yummy": [["y", "c2"], ["umm", "c1"], ["y", "c2"]], "dog": [["d", "c2"], ["o", "c1"], ["g", "c2"]], "cat": [["c", "c2"], ["a", "c1"], ["t", "c2"]], "pig": [["p", "c2"], ["i", "c1"], ["g", "c2"]], "cow": [["c", "c2"], ["ow", "c3"]], "sheep": [["sh", "c4"], ["ee", "c3"], ["p", "c2"]], "horse": [["h", "c2"], ["or", "c3"], ["se", "c5"]], "duck": [["d", "c2"], ["u", "c1"], ["ck", "c2"]], "rabbit": [["r", "c2"], ["abb", "c1"], ["it", "c2"]], "goat": [["g", "c2"], ["oa", "c3"], ["t", "c2"]], "lion": [["l", "c2"], ["i", "c3"], ["on", "c2"]], "tiger": [["t", "c2"], ["i", "c3"], ["ger", "c2"]], "elephant": [["el", "c1"], ["e", "c1"], ["phant", "c4"]], "monkey": [["m", "c2"], ["on", "c1"], ["key", "c3"]], "bear": [["b", "c2"], ["ear", "c3"]], "panda": [["p", "c2"], ["an", "c1"], ["da", "c2"]], "giraffe": [["g", "c2"], ["ir", "c3"], ["affe", "c2"]], "snake": [["sn", "c4"], ["a", "c3"], ["ke", "c5"]], "fox": [["f", "c2"], ["o", "c1"], ["x", "c2"]], "zebra": [["z", "c2"], ["e", "c1"], ["br", "c4"], ["a", "c2"]], "whale": [["wh", "c4"], ["a", "c3"], ["le", "c5"]], "dolphin": [["d", "c2"], ["ol", "c3"], ["ph", "c4"], ["in", "c2"]], "shark": [["sh", "c4"], ["ar", "c3"], ["k", "c2"]], "octopus": [["oc", "c1"], ["to", "c2"], ["pus", "c2"]], "crab": [["cr", "c4"], ["a", "c1"], ["b", "c2"]], "turtle": [["t", "c2"], ["ur", "c3"], ["tle", "c2"]], "seal": [["s", "c2"], ["ea", "c3"], ["l", "c2"]], "lobster": [["l", "c2"], ["ob", "c1"], ["st", "c4"], ["er", "c2"]], "jellyfish": [["j", "c2"], ["ell", "c1"], ["y", "c2"], ["fish", "c4"]], "school": [["sch", "c4"], ["oo", "c3"], ["l", "c2"]], "teacher": [["t", "c2"], ["ea", "c3"], ["ch", "c4"], ["er", "c2"]], "student": [["st", "c4"], ["u", "c1"], ["dent", "c2"]], "classroom": [["cl", "c4"], ["ass", "c1"], ["room", "c3"]], "homework": [["h", "c2"], ["ome", "c3"], ["w", "c2"], ["ork", "c3"]], "test": [["t", "c2"], ["e", "c1"], ["st", "c4"]], "friend": [["fr", "c4"], ["ie", "c3"], ["nd", "c2"]], "playground": [["pl", "c4"], ["ay", "c3"], ["gr", "c4"], ["ound", "c3"]], "library": [["l", "c2"], ["ibr", "c1"], ["ar", "c3"], ["y", "c2"]], "desk": [["d", "c2"], ["e", "c1"], ["sk", "c4"]], "book": [["b", "c2"], ["oo", "c3"], ["k", "c2"]], "pencil": [["p", "c2"], ["en", "c1"], ["cil", "c2"]], "pen": [["p", "c2"], ["e", "c1"], ["n", "c2"]], "eraser": [["e", "c1"], ["r", "c2"], ["as", "c1"], ["er", "c2"]], "ruler": [["r", "c2"], ["ul", "c3"], ["er", "c2"]], "scissors": [["sc", "c4"], ["iss", "c1"], ["ors", "c3"]], "paper": [["p", "c2"], ["a", "c3"], ["per", "c2"]], "bag": [["b", "c2"], ["a", "c1"], ["g", "c2"]], "crayon": [["cr", "c4"], ["ay", "c3"], ["on", "c2"]], "glue": [["gl", "c4"], ["ue", "c3"]], "English": [["Eng", "c2"], ["l", "c2"], ["ish", "c4"]], "math": [["m", "c2"], ["a", "c1"], ["th", "c4"]], "science": [["sc", "c4"], ["i", "c3"], ["ence", "c2"]], "music": [["m", "c2"], ["u", "c3"], ["sic", "c2"]], "art": [["ar", "c3"], ["t", "c2"]], "red": [["r", "c2"], ["e", "c1"], ["d", "c2"]], "blue": [["bl", "c4"], ["ue", "c3"]], "yellow": [["y", "c2"], ["ell", "c1"], ["ow", "c3"]], "green": [["gr", "c4"], ["ee", "c3"], ["n", "c2"]], "purple": [["p", "c2"], ["ur", "c3"], ["ple", "c2"]], "pink": [["p", "c2"], ["i", "c1"], ["nk", "c2"]], "black": [["bl", "c4"], ["a", "c1"], ["ck", "c2"]], "white": [["wh", "c4"], ["i", "c3"], ["te", "c5"]], "brown": [["br", "c4"], ["own", "c3"]], "big": [["b", "c2"], ["i", "c1"], ["g", "c2"]], "small": [["sm", "c4"], ["a", "c1"], ["ll", "c2"]], "tall": [["t", "c2"], ["a", "c1"], ["ll", "c2"]], "fast": [["f", "c2"], ["a", "c1"], ["st", "c4"]], "slow": [["sl", "c4"], ["ow", "c3"]], "heavy": [["h", "c2"], ["ea", "c3"], ["vy", "c2"]], "light": [["l", "c2"], ["igh", "c3"], ["t", "c2"]], "circle": [["c", "c2"], ["ir", "c3"], ["cle", "c2"]], "square": [["squ", "c4"], ["are", "c3"]], "triangle": [["tr", "c4"], ["i", "c1"], ["ang", "c1"], ["le", "c2"]], "happy": [["h", "c2"], ["app", "c1"], ["y", "c2"]], "sad": [["s", "c2"], ["a", "c1"], ["d", "c2"]], "good": [["g", "c2"], ["oo", "c3"], ["d", "c2"]], "bad": [["b", "c2"], ["a", "c1"], ["d", "c2"]], "new": [["n", "c2"], ["ew", "c3"]], "old": [["o", "c3"], ["ld", "c2"]], "car": [["c", "c2"], ["ar", "c3"]], "bus": [["b", "c2"], ["u", "c1"], ["s", "c2"]], "train": [["tr", "c4"], ["ain", "c3"]], "bike": [["b", "c2"], ["i", "c3"], ["ke", "c5"]], "plane": [["pl", "c4"], ["a", "c3"], ["ne", "c5"]], "boat": [["b", "c2"], ["oa", "c3"], ["t", "c2"]], "taxi": [["t", "c2"], ["ax", "c1"], ["i", "c3"]], "truck": [["tr", "c4"], ["u", "c1"], ["ck", "c2"]], "park": [["p", "c2"], ["ar", "c3"], ["k", "c2"]], "store": [["st", "c4"], ["ore", "c3"]], "hospital": [["h", "c2"], ["os", "c1"], ["pi", "c2"], ["tal", "c2"]], "beach": [["b", "c2"], ["ea", "c3"], ["ch", "c4"]], "mountain": [["m", "c2"], ["oun", "c3"], ["tain", "c3"]], "river": [["r", "c2"], ["iv", "c1"], ["er", "c2"]], "city": [["c", "c2"], ["i", "c1"], ["ty", "c2"]], "farm": [["f", "c2"], ["ar", "c3"], ["m", "c2"]], "market": [["m", "c2"], ["ar", "c3"], ["ket", "c2"]], "left": [["l", "c2"], ["e", "c1"], ["ft", "c4"]], "right": [["r", "c2"], ["igh", "c3"], ["t", "c2"]], "up": [["u", "c1"], ["p", "c2"]], "down": [["d", "c2"], ["own", "c3"]], "front": [["fr", "c4"], ["ont", "c1"]], "back": [["b", "c2"], ["a", "c1"], ["ck", "c2"]], "near": [["n", "c2"], ["ear", "c3"]], "far": [["f", "c2"], ["ar", "c3"]], "one": [["o", "c3"], ["ne", "c5"]], "two": [["tw", "c4"], ["o", "c3"]], "three": [["th", "c4"], ["r", "c2"], ["ee", "c3"]], "four": [["f", "c2"], ["our", "c3"]], "five": [["f", "c2"], ["i", "c3"], ["ve", "c5"]], "six": [["s", "c2"], ["i", "c1"], ["x", "c2"]], "seven": [["s", "c2"], ["ev", "c1"], ["en", "c2"]], "eight": [["e", "c2"], ["igh", "c3"], ["t", "c2"]], "nine": [["n", "c2"], ["i", "c3"], ["ne", "c5"]], "ten": [["t", "c2"], ["e", "c1"], ["n", "c2"]], "helicopter": [["hel", "c2"], ["i", "c1"], ["cop", "c2"], ["ter", "c2"]], "rescue": [["r", "c2"], ["es", "c1"], ["c", "c2"], ["ue", "c3"]], "enormous": [["e", "c1"], ["nor", "c3"], ["m", "c2"], ["ous", "c3"]], "picture": [["pic", "c2"], ["t", "c2"], ["ure", "c3"]], "castle": [["c", "c2"], ["a", "c1"], ["st", "c4"], ["le", "c5"]], "knight": [["kn", "c5"], ["igh", "c3"], ["t", "c2"]], "wood": [["w", "c2"], ["oo", "c3"], ["d", "c2"]], "outside": [["out", "c3"], ["side", "c3"]], "push": [["p", "c2"], ["u", "c1"], ["sh", "c4"]], "race": [["r", "c2"], ["a", "c3"], ["ce", "c5"]], "ambulance": [["am", "c1"], ["bu", "c2"], ["lance", "c2"]], "toy": [["t", "c2"], ["oy", "c3"]], "spring": [["spr", "c4"], ["ing", "c1"]], "summer": [["s", "c2"], ["umm", "c1"], ["er", "c2"]], "autumn": [["au", "c3"], ["tumn", "c2"]], "winter": [["w", "c2"], ["in", "c1"], ["ter", "c2"]], "weather": [["w", "c2"], ["ea", "c3"], ["th", "c4"], ["er", "c2"]], "sunny": [["s", "c2"], ["unn", "c1"], ["y", "c2"]], "rainy": [["r", "c2"], ["ain", "c3"], ["y", "c2"]], "windy": [["w", "c2"], ["ind", "c1"], ["y", "c2"]], "cloudy": [["cl", "c4"], ["oud", "c3"], ["y", "c2"]], "warm": [["w", "c2"], ["ar", "c3"], ["m", "c2"]], "cool": [["c", "c2"], ["ool", "c3"]], "snowy": [["sn", "c4"], ["ow", "c3"], ["y", "c2"]], "rainbow": [["r", "c2"], ["ain", "c3"], ["bow", "c3"]], "sun": [["s", "c2"], ["u", "c1"], ["n", "c2"]], "moon": [["m", "c2"], ["oo", "c3"], ["n", "c2"]], "star": [["st", "c4"], ["ar", "c3"]], "cloud": [["cl", "c4"], ["ou", "c3"], ["d", "c2"]], "rain": [["r", "c2"], ["ain", "c3"]], "snow": [["sn", "c4"], ["ow", "c3"]], "flower": [["fl", "c4"], ["ow", "c3"], ["er", "c2"]], "tree": [["tr", "c4"], ["ee", "c3"]], "grass": [["gr", "c4"], ["ass", "c1"]], "Monday": [["M", "c2"], ["on", "c1"], ["day", "c3"]], "Tuesday": [["T", "c2"], ["ues", "c3"], ["day", "c3"]], "Wednesday": [["W", "c2"], ["ed", "c1"], ["nes", "c2"], ["day", "c3"]], "Thursday": [["Th", "c4"], ["ur", "c3"], ["sday", "c3"]], "Friday": [["Fr", "c4"], ["i", "c3"], ["day", "c3"]], "Saturday": [["S", "c2"], ["at", "c1"], ["ur", "c3"], ["day", "c3"]], "Sunday": [["S", "c2"], ["un", "c1"], ["day", "c3"]], "morning": [["m", "c2"], ["or", "c3"], ["ning", "c2"]], "afternoon": [["af", "c1"], ["ter", "c2"], ["n", "c2"], ["oon", "c3"]], "evening": [["eve", "c3"], ["ning", "c2"]], "night": [["n", "c2"], ["igh", "c3"], ["t", "c2"]]};
-var PH_COLOR = {c1:'#f87171',c2:'#86efac',c3:'#60a5fa',c4:'#fbbf24',c5:'#9ca3af'};
-var PH_LABEL = {c1:'短母音',c2:'子音',c3:'長母音',c4:'特殊組合',c5:'靜音'};
-
-function getPhHtml(en){
-  var segs=PH_MAP[en];
-  if(!segs) return '<span style="font-weight:900;color:#fff">'+en+'</span>';
-  var out='';
-  for(var i=0;i<segs.length;i++){
-    var t=segs[i][0], c=segs[i][1];
-    var col=PH_COLOR[c]||'#fff';
-    out+='<span style="color:'+col+';font-weight:900;border-bottom:2px solid '+col+'50;padding-bottom:1px" onclick="speak(\''+t+'\')" title="'+(PH_LABEL[c]||'')+'">'+t+'</span>';
-  }
-  return out;
+function winLevel(){
+  if(player.win) return;
+  player.win=true; flag.reached=true; isWin=true;
+  sfxWin(); flash('🚩 過關！');
+  // 存檔：解鎖下一關
+  var stars=calcStars();
+  if(!save.stars[levelIndex] || save.stars[levelIndex]<stars) save.stars[levelIndex]=stars;
+  if(!save.bestCoins[levelIndex] || save.bestCoins[levelIndex]<coinCount) save.bestCoins[levelIndex]=coinCount;
+  if(levelIndex+1<LEVELS.length && save.unlocked<levelIndex+2) save.unlocked=levelIndex+2;
+  persist();
+  doneTimer=0; levelDone=true;
+}
+function calcStars(){
+  var totalCoins=0;
+  // 估算本關金幣總數
+  for(var i=0;i<coins.length;i++) totalCoins++;
+  // coins 陣列在收集後移除，改用收集數量分級
+  var s=1;
+  if(coinCount>=8) s=2;
+  if(coinCount>=16) s=3;
+  return s;
 }
 
-function getPhLegend(en){
-  var segs=PH_MAP[en];
-  if(!segs) return '';
-  var seen={};
-  var parts=[];
-  for(var i=0;i<segs.length;i++){
-    var c=segs[i][1];
-    if(!seen[c]&&PH_LABEL[c]){
-      seen[c]=1;
-      var col=PH_COLOR[c]||'#fff';
-      parts.push('<span style="color:'+col+'">■</span>'+PH_LABEL[c]);
+/* ========================= 更新：敵人 ========================= */
+function updateEnemies(){
+  for(var i=enemies.length-1;i>=0;i--){
+    var e=enemies[i];
+    if(e.dead){
+      e.deadTimer++;
+      if(e.kind==='fly'){ e.y+=3; }
+      if(e.deadTimer>22){ enemies.splice(i,1); }
+      continue;
+    }
+    // 視野外不更新（效能）
+    if(e.x<cam.x/SCALE-200 || e.x>cam.x/SCALE+VW/SCALE+200) { continue; }
+
+    e.anim+=0.15;
+    if(e.kind==='walk'){
+      e.vy+=GRAV; if(e.vy>MAXFALL) e.vy=MAXFALL;
+      e.hitWall=false;
+      moveEntityX(e,e.vx);
+      moveEntityY(e,e.vy);
+      // 邊緣偵測：避免走出平台（簡單：腳下無地則回頭）
+      if(e.onGround){
+        var aheadX=e.vx>0? e.x+e.w+2 : e.x-2;
+        var footTile=Math.floor((e.y+e.h+2)/TILE);
+        var aheadTile=Math.floor(aheadX/TILE);
+        if(!solidAt(aheadTile,footTile)){ e.vx=-e.vx; }
+      }
+    }else if(e.kind==='fly'){
+      e.t+=0.05;
+      e.y=e.baseY+Math.sin(e.t)*TILE*1.2;
+      e.x+=e.dir*0.9;
+      // 飛行怪左右巡邏，撞牆回頭
+      var tcol=e.dir>0? Math.floor((e.x+e.w)/TILE):Math.floor(e.x/TILE);
+      var tmid=Math.floor((e.y+e.h/2)/TILE);
+      if(solidAt(tcol,tmid)) e.dir=-e.dir;
+      // 巡邏範圍限制
+      if(e.x<TILE) e.dir=1;
+      if(e.x>mapW*TILE-TILE*2) e.dir=-1;
+    }else if(e.kind==='jump'){
+      e.vy+=GRAV; if(e.vy>MAXFALL) e.vy=MAXFALL;
+      e.hitWall=false;
+      moveEntityX(e,e.vx);
+      moveEntityY(e,e.vy);
+      if(e.onGround){
+        e.jumpCd--;
+        if(e.jumpCd<=0){
+          e.vy=-9.5; e.onGround=false; e.jumpCd=rand(50,100);
+          // 朝玩家方向微調
+          e.vx = player.x<e.x? -0.9:0.9;
+        }
+        var ahead=e.vx>0? e.x+e.w+2:e.x-2;
+        if(!solidAt(Math.floor(ahead/TILE),Math.floor((e.y+e.h+2)/TILE))) e.vx=-e.vx;
+      }
+    }else if(e.kind==='charge'){
+      e.vy+=GRAV; if(e.vy>MAXFALL) e.vy=MAXFALL;
+      e.hitWall=false;
+      var spd=e.shell? e.vx : (e.vx>0?1.0:-1.0);
+      moveEntityX(e, e.shell? e.vx : spd);
+      moveEntityY(e,e.vy);
+      if(e.hitWall && e.shell){ /* 殼撞牆反彈，已在moveEntityX處理vx反向 */ }
+      if(!e.shell && e.onGround){
+        var ah=spd>0? e.x+e.w+2:e.x-2;
+        if(!solidAt(Math.floor(ah/TILE),Math.floor((e.y+e.h+2)/TILE))){ e.vx=-e.vx; }
+      }
+      // 殼撞到其他敵人
+      if(e.shell && Math.abs(e.vx)>3){
+        for(var ke=enemies.length-1;ke>=0;ke--){
+          var o=enemies[ke];
+          if(o!==e && !o.dead && rectsOverlap(e,o)){ killEnemy(o,ke); addFloat(o.x,o.y,'+100','#ffe66d'); }
+        }
+      }
+    }
+
+    // 與玩家互動
+    if(!player.dead && !player.win && rectsOverlap(player,e)){
+      var pBottom=player.y+player.h;
+      var eMid=e.y+e.h*0.45;
+      if(player.star>0){
+        killEnemy(e,i); addFloat(e.x,e.y,'+200','#ff6bff');
+      }else if(e.kind==='charge'){
+        if(player.vy>0 && pBottom < eMid+12){
+          // 踩殼怪
+          if(!e.shell){ e.shell=true; e.vx=0; e.h=e.h*0.7; e.y+=e.h*0.4; }
+          else if(Math.abs(e.vx)<1){ e.vx = player.x<e.x? 5.5:-5.5; } // 踢出殼
+          else { e.vx=0; } // 踩停
+          player.vy=keys.jump? -11:-7.5; sfxStomp(); addFloat(e.x,e.y,'+100','#ffe66d');
+        }else if(e.shell && Math.abs(e.vx)>3){
+          killPlayer(); // 被滾動的殼撞到
+        }else if(e.shell && Math.abs(e.vx)<1){
+          e.vx = player.x<e.x? 5.5:-5.5; sfxStomp(); // 側邊踢殼
+        }else{
+          killPlayer();
+        }
+      }else if(player.vy>0 && pBottom < eMid+10){
+        killEnemy(e,i);
+        player.vy=keys.jump? -11 : -7.5;
+        sfxStomp(); addFloat(e.x,e.y,'+100','#ffe66d');
+      }else{
+        killPlayer();
+      }
     }
   }
-  return parts.join('  ');
+}
+function coinScore(n){ }
+function killEnemy(e,idx){
+  e.dead=true; e.deadTimer=0; e.squash=1;
+  var col = e.kind==='fly'?'#b06bff':(e.kind==='jump'?'#5ac85a':(e.kind==='charge'?'#5aa5e8':'#c0703a'));
+  addParticles(e.x+e.w/2,e.y+e.h/2, col,10,4);
+  if(e.kind==='walk'||e.kind==='charge'){ e.h=e.h*0.4; e.y+=e.h; }
 }
 
-// =============================================
-// 語音
-// =============================================
-function speak(text){
-  if(!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  var u=new SpeechSynthesisUtterance(text);
-  u.lang='en-US'; u.rate=0.78; u.pitch=1;
-  window.speechSynthesis.speak(u);
+/* ========================= 更新：道具/金幣 ========================= */
+function updateItems(){
+  // 金幣
+  for(var i=coins.length-1;i>=0;i--){
+    var c=coins[i]; c.anim+=0.18;
+    if(!player.dead && !player.win && rectsOverlap(player,c)){
+      coins.splice(i,1); coinCount++; sfxCoin(); updateHUD();
+      addFloat(c.x,c.y,'+1','#ffd166'); addParticles(c.x+c.w/2,c.y+c.h/2,'#ffd166',6,3);
+    }
+  }
+  // 道具
+  for(var j=items.length-1;j>=0;j--){
+    var it=items[j];
+    if(it.emerge>0){ // 冒出動畫
+      var step=Math.min(2,it.emerge); it.y-=step; it.emerge-=step;
+      continue;
+    }
+    if(it.kind==='mushroom'){
+      it.vy+=GRAV; if(it.vy>MAXFALL) it.vy=MAXFALL;
+      it.hitWall=false; moveEntityX(it,it.vx);
+      if(it.hitWall) it.vx=-it.vx;
+      moveEntityY(it,it.vy);
+    }else if(it.kind==='star'){
+      it.anim=(it.anim||0)+0.2;
+      it.vy+=GRAV*0.85; if(it.vy>MAXFALL) it.vy=MAXFALL;
+      it.hitWall=false; moveEntityX(it,it.vx);
+      if(it.hitWall) it.vx=-it.vx;
+      var wasGround=it.onGround;
+      moveEntityY(it,it.vy);
+      if(it.onGround && !wasGround) it.vy=-7; // 星星彈跳
+    }
+    if(!player.dead && !player.win && rectsOverlap(player,it)){
+      if(it.kind==='mushroom'){
+        if(!player.big){ player.big=true; applyBigSize(); }
+        sfxPower(); flash('🍄 變大了！'); addFloat(player.x,player.y,'+1000','#43d17a');
+      }else if(it.kind==='star'){
+        player.star=480; sfxPower(); flash('⭐ 無敵模式！');
+      }
+      addParticles(it.x+it.w/2,it.y+it.h/2,'#fff',12,5);
+      items.splice(j,1);
+    }
+  }
 }
 
-// =============================================
-// 特效
-// =============================================
-function particles(){
-  var emojis=['🌟','✨','🎉'];
-  for(var i=0;i<3;i++){
+/* ========================= 更新：移動平台 ========================= */
+function updateMovers(){
+  for(var i=0;i<movers.length;i++){
+    var m=movers[i];
+    m.px=m.x; m.py=m.y;
+    m.t+=0.025;
+    if(m.kind==='h'){ m.x=m.ox+Math.sin(m.t)*m.range; }
+    else{ m.y=m.oy+Math.sin(m.t)*m.range; }
+    m.vx=m.x-m.px; m.vy=m.y-m.py;
+    // 玩家站在平台上 → 跟著移動
+    if(!player.dead && !player.win){
+      var onTop = player.vy>=0 &&
+        player.x+player.w>m.x+3 && player.x<m.x+m.w-3 &&
+        (player.y+player.h)>=m.y-2 && (player.y+player.h)<=m.y+m.h+8;
+      if(onTop){
+        player.y=m.y-player.h-0.01;
+        player.x+=m.vx; player.vy=0; player.onGround=true; player.coyote=COYOTE;
+        player.onMover=true;
+      }
+    }
+  }
+}
+
+/* ========================= 更新：彈簧床 ========================= */
+function updateSprings(){
+  for(var i=0;i<springs.length;i++){
+    var s=springs[i];
+    if(s.comp>0) s.comp--;
+    if(!player.dead && !player.win){
+      var hit = player.vy>=0 &&
+        player.x+player.w>s.x && player.x<s.x+s.w &&
+        (player.y+player.h)>=s.y-2 && (player.y+player.h)<=s.y+s.h+6;
+      if(hit){
+        player.y=s.y-player.h-0.01;
+        player.vy = keys.jump? -19 : -15;  // 超級彈跳！按住跳更高
+        player.jumpFrames=JUMP_HOLD_FRAMES;
+        s.comp=10; sfxSpring();
+        addParticles(s.x+s.w/2,s.y,'#ffd166',8,4);
+      }
+    }
+  }
+}
+
+/* ========================= 更新：水管吐怪 ========================= */
+function updatePipes(){
+  for(var i=0;i<pipes.length;i++){
+    var p=pipes[i];
+    // 在畫面內、冷卻好了，週期吐一隻飛行怪
+    var onScreen = p.x>cam.x/SCALE-100 && p.x<cam.x/SCALE+VW/SCALE+100;
+    if(p.cd===undefined) p.cd=rand(120,200);
+    if(onScreen){
+      p.cd--;
+      if(p.cd<=0){
+        p.cd=rand(180,300);
+        // 限制同時數量避免太難
+        var flyCount=0; for(var k=0;k<enemies.length;k++){ if(enemies[k].kind==='fly'&&!enemies[k].dead) flyCount++; }
+        if(flyCount<6){
+          var e=mkEnemy('fly',p.x,p.y-TILE*0.6);
+          e.dir = player.x<p.x? -1:1;
+          e.baseY=p.y-TILE*1.4; e.fromPipe=true;
+          enemies.push(e);
+          addParticles(p.x+TILE/2,p.y,'#5da83f',5,3);
+        }
+      }
+    }
+  }
+}
+
+/* ========================= 更新：Boss ========================= */
+function updateBoss(){
+  if(!boss) return;
+  if(boss.dead){
+    boss.deadTimer++;
+    boss.y+=2; boss.anim+=0.3;
+    if(boss.deadTimer>90 && !player.win){ winLevel(); }
+    return;
+  }
+  boss.anim+=0.1;
+  if(boss.hurtT>0) boss.hurtT--;
+  if(boss.stompCd>0) boss.stompCd--;
+
+  boss.vy+=GRAV; if(boss.vy>MAXFALL) boss.vy=MAXFALL;
+  boss.t++;
+
+  // 行為：左右走 + 週期跳向玩家
+  moveEntityX(boss,boss.vx);
+  if(boss.hitWall){ boss.vx=-boss.vx; }
+  moveEntityY(boss,boss.vy);
+
+  // 邊緣折返
+  if(boss.onGround){
+    var ah=boss.vx>0? boss.x+boss.w+2:boss.x-2;
+    if(!solidAt(Math.floor(ah/TILE),Math.floor((boss.y+boss.h+2)/TILE))) boss.vx=-boss.vx;
+    boss.jumpCd--;
+    if(boss.jumpCd<=0){
+      boss.vy=-11; boss.onGround=false; boss.jumpCd=rand(90,150);
+      boss.vx = (player.x<boss.x?-1:1)*1.8;
+      sfxBossJump();
+    }
+  }
+  // 落地震動
+  if(boss.onGround && boss.vy===0 && boss.wasAir){ shake=6; boss.wasAir=false; }
+  if(!boss.onGround) boss.wasAir=true;
+
+  // 與玩家互動
+  if(!player.dead && !player.win && rectsOverlap(player,boss)){
+    var pB=player.y+player.h, bMid=boss.y+boss.h*0.35;
+    if((player.vy>0 && pB<bMid+14) || player.star>0){
+      // 踩到頭 or 無敵撞 → 扣血
+      if(boss.hurtT<=0){
+        boss.hp--; boss.hurtT=60; sfxBossHurt(); shake=6;
+        addParticles(boss.x+boss.w/2,boss.y,'#ff5a7a',16,6);
+        player.vy=-11;
+        if(boss.hp<=0){ boss.dead=true; boss.deadTimer=0; boss.vy=-6; sfxWin(); flash('👑 打敗大魔王！'); }
+        else { flash('💥 還剩 '+boss.hp+' 滴血！'); boss.vx=(player.x<boss.x?1:-1)*2; }
+      }else{ player.vy=-9; }
+    }else if(player.star<=0 && boss.hurtT<=0){
+      killPlayer();
+    }
+  }
+}
+
+/* ========================= 更新：尖刺/特效 ========================= */
+function updateSpikes(){
+  for(var i=0;i<spikes.length;i++){
+    if(!player.dead && !player.win && player.star<=0 && rectsOverlap(player,spikes[i])){
+      hardKill(); return;
+    }
+  }
+}
+function updateParticles(){
+  for(var i=particles.length-1;i>=0;i--){
+    var p=particles[i]; p.vy+=0.25; p.x+=p.vx; p.y+=p.vy; p.life--;
+    if(p.life<=0) particles.splice(i,1);
+  }
+  for(var j=floaters.length-1;j>=0;j--){
+    var f=floaters[j]; f.y+=f.vy; f.life--;
+    if(f.life<=0) floaters.splice(j,1);
+  }
+  for(var k=0;k<blocks.length;k++){ if(blocks[k].bump>0) blocks[k].bump--; }
+}
+
+/* ========================= 相機 ========================= */
+function updateCamera(){
+  var targetX=(player.x+player.w/2)*SCALE - VW*0.42;
+  var targetY=(player.y+player.h/2)*SCALE - VH*0.55;
+  cam.x += (targetX-cam.x)*0.12;
+  cam.y += (targetY-cam.y)*0.10;
+  cam.x=clamp(cam.x,0, Math.max(0, mapW*TILE*SCALE - VW));
+  cam.y=clamp(cam.y, -50, Math.max(0, mapH*TILE*SCALE - VH));
+}
+
+/* ========================= 繪製 ========================= */
+function draw(){
+  // 天空漸層
+  var g=ctx.createLinearGradient(0,0,0,VH);
+  g.addColorStop(0,theme.sky1); g.addColorStop(1,theme.sky2);
+  ctx.fillStyle=g; ctx.fillRect(0,0,VW,VH);
+
+  var sx=shake>0? rand(-shake,shake):0;
+  var sy=shake>0? rand(-shake,shake):0;
+  if(shake>0) shake-=0.6; if(shake<0) shake=0;
+
+  ctx.save();
+  ctx.translate(-cam.x+sx,-cam.y+sy);
+  ctx.scale(SCALE,SCALE);
+
+  drawBackground();
+  drawTiles();
+  drawPipes();
+  drawMovers();
+  drawSprings();
+  drawCoins();
+  drawItems();
+  drawSpikes();
+  drawEnemies();
+  drawBoss();
+  drawFlag();
+  drawPlayer();
+  drawParticles();
+  drawFloaters();
+  if(theme.underwater) drawWaterOverlay();
+
+  ctx.restore();
+}
+function drawWaterOverlay(){
+  // 水下藍色濾鏡與氣泡
+  ctx.fillStyle='rgba(40,120,180,0.12)';
+  ctx.fillRect(cam.x/SCALE,cam.y/SCALE,VW/SCALE,VH/SCALE);
+  for(var i=0;i<6;i++){
+    var bx=(cam.x/SCALE)+((frame*0.4+i*90)%(VW/SCALE));
+    var by=(cam.y/SCALE+VH/SCALE)-((frame*1.2+i*130)%(VH/SCALE));
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    ctx.beginPath(); ctx.arc(bx,by,3+i%3,0,7); ctx.fill();
+  }
+}
+
+function drawBackground(){
+  // 遠山
+  ctx.fillStyle=theme.hill;
+  var camWX=cam.x/SCALE;
+  for(var i=0;i<bgHills.length;i++){
+    var h=bgHills[i];
+    var hx=h.x - camWX*0.3 + camWX; // 視差
+    ctx.beginPath();
+    ctx.arc(h.x, mapH*TILE-TILE*1.5, h.r, Math.PI,0);
+    ctx.fill();
+  }
+  // 雲
+  for(var c=0;c<bgClouds.length;c++){
+    var cl=bgClouds[c];
+    var cx=cl.x - (camWX*(1-cl.sp));
+    cx=((cx%(mapW*TILE+400))+ (mapW*TILE+400))%(mapW*TILE+400)-200;
+    drawCloud(cx, cl.y/SCALE + (cam.y/SCALE), cl.s);
+  }
+}
+function drawCloud(x,y,s){
+  ctx.fillStyle=theme.cloud; ctx.globalAlpha=0.85;
+  ctx.beginPath();
+  ctx.arc(x,y,22*s,0,7); ctx.arc(x+26*s,y-8*s,28*s,0,7);
+  ctx.arc(x+54*s,y,22*s,0,7); ctx.arc(x+28*s,y+8*s,24*s,0,7);
+  ctx.fill(); ctx.globalAlpha=1;
+}
+
+function drawTiles(){
+  var x0=Math.floor(cam.x/SCALE/TILE)-1;
+  var x1=Math.ceil((cam.x/SCALE+VW/SCALE)/TILE)+1;
+  var y0=Math.floor(cam.y/SCALE/TILE)-1;
+  var y1=Math.ceil((cam.y/SCALE+VH/SCALE)/TILE)+1;
+  for(var y=Math.max(0,y0);y<Math.min(mapH,y1);y++){
+    for(var x=Math.max(0,x0);x<Math.min(mapW,x1);x++){
+      var t=grid[y][x];
+      if(t===0) continue;
+      var px=x*TILE, py=y*TILE;
+      if(t===1){ drawGroundTile(px,py,x,y); }
+    }
+  }
+  // blocks（磚/問號）單獨畫，有 bump 動畫
+  for(var b=0;b<blocks.length;b++){
+    var bl=blocks[b];
+    if(bl.broken) continue;
+    if(bl.x<cam.x/SCALE-TILE || bl.x>cam.x/SCALE+VW/SCALE+TILE) continue;
+    drawBlock(bl);
+  }
+}
+function drawGroundTile(px,py,tx,ty){
+  var topOpen = ty===0 || grid[ty-1][tx]===0;
+  ctx.fillStyle=theme.ground;
+  ctx.fillRect(px,py,TILE,TILE);
+  if(topOpen){
+    ctx.fillStyle=theme.groundTop;
+    ctx.fillRect(px,py,TILE,TILE*0.28);
+  }
+  // 紋理小點
+  ctx.fillStyle='rgba(0,0,0,0.08)';
+  ctx.fillRect(px+TILE*0.18,py+TILE*0.5,4,4);
+  ctx.fillRect(px+TILE*0.62,py+TILE*0.72,4,4);
+  ctx.strokeStyle='rgba(0,0,0,0.10)'; ctx.lineWidth=1.5;
+  ctx.strokeRect(px+0.5,py+0.5,TILE-1,TILE-1);
+}
+function drawBlock(b){
+  var off=b.bump>0? -b.bump:0;
+  var px=b.x, py=b.y+off;
+  if(b.type==='brick'){
+    ctx.fillStyle=theme.brick; ctx.fillRect(px,py,TILE,TILE);
+    ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=2;
+    ctx.strokeRect(px+1,py+1,TILE-2,TILE-2);
+    ctx.beginPath();
+    ctx.moveTo(px,py+TILE/2); ctx.lineTo(px+TILE,py+TILE/2);
+    ctx.moveTo(px+TILE/2,py); ctx.lineTo(px+TILE/2,py+TILE/2);
+    ctx.moveTo(px+TILE*0.25,py+TILE/2); ctx.lineTo(px+TILE*0.25,py+TILE);
+    ctx.moveTo(px+TILE*0.75,py+TILE/2); ctx.lineTo(px+TILE*0.75,py+TILE);
+    ctx.stroke();
+  }else{
+    // 問號磚（未敲=金黃發亮；敲過=咖啡空磚）
+    if(b.used){
+      ctx.fillStyle='#8a6d3a'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=2; ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);
+    }else{
+      var pulse=0.5+0.5*Math.sin(frame*0.1+px*0.05);
+      ctx.fillStyle='#f0a500'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle='rgba(255,255,200,'+(0.3+pulse*0.4)+')';
+      ctx.fillRect(px+3,py+3,TILE-6,TILE-6);
+      ctx.fillStyle='#fff'; ctx.font='900 '+(TILE*0.6)+'px Trebuchet MS';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      var sym=b.type==='mushroom'?'?':(b.type==='star'?'★':'?');
+      ctx.fillText(b.type==='star'?'★':'?', px+TILE/2, py+TILE/2+1);
+      // 角落鉚釘
+      ctx.fillStyle='#b87900';
+      [[5,5],[TILE-9,5],[5,TILE-9],[TILE-9,TILE-9]].forEach(function(c){ ctx.fillRect(px+c[0],py+c[1],3,3); });
+    }
+  }
+}
+
+function drawCoins(){
+  for(var i=0;i<coins.length;i++){
+    var c=coins[i];
+    if(c.x<cam.x/SCALE-TILE || c.x>cam.x/SCALE+VW/SCALE+TILE) continue;
+    var sw=Math.abs(Math.sin(c.anim))*0.8+0.2; // 旋轉寬度
+    var cx=c.x+c.w/2, cy=c.y+c.h/2;
+    ctx.fillStyle='#ffd166';
+    ctx.beginPath(); ctx.ellipse(cx,cy,c.w/2*sw,c.h/2,0,0,7); ctx.fill();
+    ctx.fillStyle='#ffe9a8';
+    ctx.beginPath(); ctx.ellipse(cx,cy,c.w/2*sw*0.55,c.h/2*0.6,0,0,7); ctx.fill();
+    ctx.strokeStyle='#b87900'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.ellipse(cx,cy,c.w/2*sw,c.h/2,0,0,7); ctx.stroke();
+  }
+}
+function drawItems(){
+  for(var i=0;i<items.length;i++){
+    var it=items[i], cx=it.x+it.w/2, cy=it.y+it.h/2;
+    if(it.kind==='mushroom'){
+      ctx.fillStyle='#fff'; ctx.fillRect(it.x+it.w*0.22,cy,it.w*0.56,it.h*0.45); // 柄
+      ctx.fillStyle='#e8472e';
+      ctx.beginPath(); ctx.arc(cx,cy,it.w*0.5,Math.PI,0); ctx.fill();
+      ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(cx-it.w*0.2,cy-it.h*0.12,it.w*0.1,0,7); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx+it.w*0.2,cy-it.h*0.12,it.w*0.1,0,7); ctx.fill();
+    }else if(it.kind==='star'){
+      drawStar(cx,cy,it.w*0.5, '#ffe66d', (it.anim||0));
+    }
+  }
+}
+function drawStar(cx,cy,r,color,rot){
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(rot*0.5);
+  ctx.fillStyle=color; ctx.beginPath();
+  for(var i=0;i<5;i++){
+    var a=-Math.PI/2 + i*Math.PI*2/5;
+    ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+    var a2=a+Math.PI/5;
+    ctx.lineTo(Math.cos(a2)*r*0.45, Math.sin(a2)*r*0.45);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#f0a500'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.restore();
+}
+function drawSpikes(){
+  ctx.fillStyle='#9aa5b5';
+  for(var i=0;i<spikes.length;i++){
+    var s=spikes[i];
+    if(s.x<cam.x/SCALE-TILE || s.x>cam.x/SCALE+VW/SCALE+TILE) continue;
+    var n=3;
+    for(var k=0;k<n;k++){
+      var sx=s.x+k*(s.w/n);
+      ctx.beginPath();
+      ctx.moveTo(sx,s.y+s.h);
+      ctx.lineTo(sx+s.w/n/2,s.y);
+      ctx.lineTo(sx+s.w/n,s.y+s.h);
+      ctx.fill();
+    }
+    ctx.fillStyle='#6b7585'; ctx.fillRect(s.x,s.y+s.h-3,s.w,3); ctx.fillStyle='#9aa5b5';
+  }
+}
+
+function drawEnemies(){
+  for(var i=0;i<enemies.length;i++){
+    var e=enemies[i];
+    if(e.x<cam.x/SCALE-TILE*2 || e.x>cam.x/SCALE+VW/SCALE+TILE*2) continue;
+    var cx=e.x+e.w/2, cy=e.y+e.h/2;
+    if(e.kind==='walk'){
+      var sq=e.dead?0.4:1;
+      // 身體（栗子怪）
+      ctx.fillStyle=e.dead?'#8a5a2a':'#9c5a2a';
+      ctx.beginPath(); ctx.ellipse(cx,e.y+e.h*0.55, e.w*0.5, e.h*0.45*sq, 0,0,7); ctx.fill();
+      if(!e.dead){
+        // 腳
+        var legPhase=Math.sin(e.anim)*3;
+        ctx.fillStyle='#5a3415';
+        ctx.fillRect(e.x+e.w*0.15, e.y+e.h*0.82, e.w*0.25, e.h*0.18);
+        ctx.fillRect(e.x+e.w*0.6, e.y+e.h*0.82, e.w*0.25, e.h*0.18);
+        // 眼睛
+        ctx.fillStyle='#fff';
+        ctx.beginPath(); ctx.arc(cx-e.w*0.16,cy-e.h*0.05,e.w*0.13,0,7); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+e.w*0.16,cy-e.h*0.05,e.w*0.13,0,7); ctx.fill();
+        ctx.fillStyle='#000';
+        var ed=e.vx<0?-1:1;
+        ctx.beginPath(); ctx.arc(cx-e.w*0.16+ed*2,cy-e.h*0.05,e.w*0.06,0,7); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+e.w*0.16+ed*2,cy-e.h*0.05,e.w*0.06,0,7); ctx.fill();
+        // 怒眉
+        ctx.strokeStyle='#000'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(cx-e.w*0.3,cy-e.h*0.2); ctx.lineTo(cx-e.w*0.05,cy-e.h*0.1);
+        ctx.moveTo(cx+e.w*0.3,cy-e.h*0.2); ctx.lineTo(cx+e.w*0.05,cy-e.h*0.1); ctx.stroke();
+      }
+    }else if(e.kind==='jump'){
+      // 跳跳怪（綠色青蛙狀）
+      var sq2 = e.dead?0.4:(e.onGround?1:1.12);
+      ctx.fillStyle=e.dead?'#4a8a3a':'#5da83f';
+      ctx.beginPath(); ctx.ellipse(cx,e.y+e.h*0.5,e.w*0.48,e.h*0.46*sq2,0,0,7); ctx.fill();
+      if(!e.dead){
+        // 後腿
+        ctx.fillStyle='#4a8a2f';
+        ctx.beginPath(); ctx.ellipse(e.x+e.w*0.2,e.y+e.h*0.8,e.w*0.18,e.h*0.14,0,0,7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(e.x+e.w*0.8,e.y+e.h*0.8,e.w*0.18,e.h*0.14,0,0,7); ctx.fill();
+        // 大眼睛凸起
+        ctx.fillStyle='#7ac85a';
+        ctx.beginPath(); ctx.arc(cx-e.w*0.2,e.y+e.h*0.18,e.w*0.16,0,7); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+e.w*0.2,e.y+e.h*0.18,e.w*0.16,0,7); ctx.fill();
+        ctx.fillStyle='#fff';
+        ctx.beginPath(); ctx.arc(cx-e.w*0.2,e.y+e.h*0.16,e.w*0.1,0,7); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+e.w*0.2,e.y+e.h*0.16,e.w*0.1,0,7); ctx.fill();
+        ctx.fillStyle='#000';
+        ctx.beginPath(); ctx.arc(cx-e.w*0.2,e.y+e.h*0.17,e.w*0.05,0,7); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+e.w*0.2,e.y+e.h*0.17,e.w*0.05,0,7); ctx.fill();
+        // 微笑
+        ctx.strokeStyle='#2a5a1a'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(cx,cy+e.h*0.05,e.w*0.2,0.1,Math.PI-0.1); ctx.stroke();
+      }
+    }else if(e.kind==='charge'){
+      // 殼怪（烏龜）
+      if(e.shell){
+        // 縮進殼
+        ctx.fillStyle=e.dead?'#3a7a8a':'#2a8ab5';
+        ctx.beginPath(); ctx.ellipse(cx,cy,e.w*0.5,e.h*0.55,0,0,7); ctx.fill();
+        ctx.fillStyle='#1a6a95';
+        for(var hx=-1;hx<=1;hx++) for(var hy=-1;hy<=1;hy++){
+          ctx.beginPath(); ctx.arc(cx+hx*e.w*0.22,cy+hy*e.h*0.22,e.w*0.08,0,7); ctx.fill();
+        }
+        if(Math.abs(e.vx)>3){ // 滾動星星
+          ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.arc(cx,cy,e.w*0.6,frame*0.3,frame*0.3+2); ctx.stroke();
+        }
+      }else{
+        var sq3=e.dead?0.4:1;
+        // 殼
+        ctx.fillStyle=e.dead?'#3a7a8a':'#2a8ab5';
+        ctx.beginPath(); ctx.ellipse(cx,e.y+e.h*0.45,e.w*0.46,e.h*0.45*sq3,0,0,7); ctx.fill();
+        if(!e.dead){
+          // 頭
+          var hd=e.vx<0?-1:1;
+          ctx.fillStyle='#7ac88a';
+          ctx.beginPath(); ctx.arc(cx+hd*e.w*0.4,e.y+e.h*0.4,e.w*0.18,0,7); ctx.fill();
+          // 腳
+          ctx.fillStyle='#6ab87a';
+          ctx.fillRect(e.x+e.w*0.15,e.y+e.h*0.78,e.w*0.2,e.h*0.2);
+          ctx.fillRect(e.x+e.w*0.6,e.y+e.h*0.78,e.w*0.2,e.h*0.2);
+          // 殼紋
+          ctx.strokeStyle='#1a6a95'; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.ellipse(cx,e.y+e.h*0.45,e.w*0.3,e.h*0.3,0,0,7); ctx.stroke();
+          // 眼
+          ctx.fillStyle='#000';
+          ctx.beginPath(); ctx.arc(cx+hd*e.w*0.42,e.y+e.h*0.36,e.w*0.04,0,7); ctx.fill();
+        }
+      }
+    }else{
+      // 飛行怪（蝙蝠/小飛蟲）
+      var flap=Math.sin(e.anim*1.5)*e.w*0.3;
+      ctx.fillStyle=e.dead?'#7a4aaa':'#9c5ad0';
+      ctx.beginPath(); ctx.ellipse(cx,cy,e.w*0.36,e.h*0.4,0,0,7); ctx.fill();
+      if(!e.dead){
+        // 翅膀
+        ctx.fillStyle='#b985e8';
+        ctx.beginPath(); ctx.ellipse(cx-e.w*0.4,cy-flap*0.2,e.w*0.32,e.h*0.22,-0.5,0,7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx+e.w*0.4,cy-flap*0.2,e.w*0.32,e.h*0.22,0.5,0,7); ctx.fill();
+        // 眼睛
+        ctx.fillStyle='#fff';
+        ctx.beginPath(); ctx.arc(cx-e.w*0.12,cy-e.h*0.05,e.w*0.1,0,7); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+e.w*0.12,cy-e.h*0.05,e.w*0.1,0,7); ctx.fill();
+        ctx.fillStyle='#000';
+        ctx.beginPath(); ctx.arc(cx-e.w*0.12,cy-e.h*0.05,e.w*0.05,0,7); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+e.w*0.12,cy-e.h*0.05,e.w*0.05,0,7); ctx.fill();
+      }
+    }
+  }
+}
+
+function drawMovers(){
+  for(var i=0;i<movers.length;i++){
+    var m=movers[i];
+    if(m.x<cam.x/SCALE-TILE*3 || m.x>cam.x/SCALE+VW/SCALE+TILE*2) continue;
+    ctx.fillStyle=theme.brick;
+    roundRect(m.x,m.y,m.w,m.h,6); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.25)';
+    ctx.fillRect(m.x+4,m.y+3,m.w-8,3);
+    ctx.fillStyle='rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.arc(m.x+8,m.y+m.h/2,2.5,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(m.x+m.w-8,m.y+m.h/2,2.5,0,7); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.4)';
+    ctx.font='900 12px Trebuchet MS'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(m.kind==='h'?'↔':'↕', m.x+m.w/2, m.y+m.h/2);
+  }
+}
+function drawSprings(){
+  for(var i=0;i<springs.length;i++){
+    var s=springs[i];
+    if(s.x<cam.x/SCALE-TILE || s.x>cam.x/SCALE+VW/SCALE+TILE) continue;
+    var c=s.comp>0? s.h*0.5:0;
+    ctx.fillStyle='#c0392b'; ctx.fillRect(s.x,s.y+s.h-6,s.w,6);
+    ctx.strokeStyle='#ffd166'; ctx.lineWidth=4;
+    ctx.beginPath();
+    var coils=3, top=s.y+c+2;
+    for(var k=0;k<=coils;k++){
+      var yy=top+(s.h-8-c)*(k/coils);
+      ctx.moveTo(s.x+4,yy); ctx.lineTo(s.x+s.w-4,yy-3);
+    }
+    ctx.stroke();
+    ctx.fillStyle='#e8472e'; roundRect(s.x-2,top-4,s.w+4,6,3); ctx.fill();
+  }
+}
+function drawPipes(){
+  for(var i=0;i<pipes.length;i++){
+    var p=pipes[i];
+    if(p.x<cam.x/SCALE-TILE*2 || p.x>cam.x/SCALE+VW/SCALE+TILE*2) continue;
+    var px=p.x, py=p.y;
+    ctx.fillStyle='#2e7d32';
+    ctx.fillRect(px-3, py+TILE*0.4, TILE+6, mapH*TILE-py);
+    ctx.fillStyle='#43a047';
+    ctx.fillRect(px-5, py+TILE*0.35, TILE+10, TILE*0.35);
+    ctx.fillStyle='rgba(255,255,255,0.25)';
+    ctx.fillRect(px+2, py+TILE*0.4, 5, mapH*TILE-py);
+    ctx.fillStyle='rgba(0,0,0,0.15)';
+    ctx.fillRect(px+TILE*0.7, py+TILE*0.4, 6, mapH*TILE-py);
+  }
+}
+function drawBoss(){
+  if(!boss) return;
+  var cx=boss.x+boss.w/2, cy=boss.y+boss.h/2;
+  var hurt = boss.hurtT>0 && Math.floor(boss.hurtT/4)%2===0;
+  ctx.save();
+  ctx.translate(cx,cy);
+  var sq=1+Math.sin(boss.anim)*0.04;
+  ctx.scale(boss.vx<0?-1:1, 1);
+  ctx.scale(1, sq);
+  ctx.fillStyle=hurt?'#ffffff':(boss.dead?'#5a3a6a':'#6a2a8a');
+  roundRectC(-boss.w/2, -boss.h/2, boss.w, boss.h, 14); ctx.fill();
+  ctx.fillStyle=hurt?'#ffd5e0':'#9c5ad0';
+  roundRectC(-boss.w*0.3, -boss.h*0.1, boss.w*0.6, boss.h*0.5, 10); ctx.fill();
+  ctx.fillStyle=hurt?'#fff':'#3a1550';
+  ctx.beginPath(); ctx.moveTo(-boss.w*0.4,-boss.h*0.45); ctx.lineTo(-boss.w*0.55,-boss.h*0.75); ctx.lineTo(-boss.w*0.25,-boss.h*0.5); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(boss.w*0.4,-boss.h*0.45); ctx.lineTo(boss.w*0.55,-boss.h*0.75); ctx.lineTo(boss.w*0.25,-boss.h*0.5); ctx.fill();
+  if(!boss.dead){
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(-boss.w*0.18,-boss.h*0.12,boss.w*0.13,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(boss.w*0.18,-boss.h*0.12,boss.w*0.13,0,7); ctx.fill();
+    ctx.fillStyle='#e8472e';
+    ctx.beginPath(); ctx.arc(-boss.w*0.18,-boss.h*0.12,boss.w*0.06,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(boss.w*0.18,-boss.h*0.12,boss.w*0.06,0,7); ctx.fill();
+    ctx.strokeStyle=hurt?'#fff':'#2a0a3a'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(-boss.w*0.32,-boss.h*0.28); ctx.lineTo(-boss.w*0.05,-boss.h*0.16);
+    ctx.moveTo(boss.w*0.32,-boss.h*0.28); ctx.lineTo(boss.w*0.05,-boss.h*0.16); ctx.stroke();
+    ctx.fillStyle='#2a0a3a'; roundRectC(-boss.w*0.2,boss.h*0.12,boss.w*0.4,boss.h*0.14,4); ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.moveTo(-boss.w*0.12,boss.h*0.12); ctx.lineTo(-boss.w*0.06,boss.h*0.22); ctx.lineTo(0,boss.h*0.12); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(boss.w*0.12,boss.h*0.12); ctx.lineTo(boss.w*0.06,boss.h*0.22); ctx.lineTo(0,boss.h*0.12); ctx.fill();
+  }else{
+    ctx.fillStyle='#fff'; ctx.font=(boss.h*0.4)+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('💫',0,-boss.h*0.1);
+  }
+  ctx.restore();
+  if(!boss.dead){
+    var bw=boss.w*1.2, bx=cx-bw/2, by=boss.y-18;
+    ctx.fillStyle='rgba(0,0,0,0.4)'; roundRect(bx-2,by-2,bw+4,12,4); ctx.fill();
+    for(var h=0;h<boss.maxhp;h++){
+      ctx.fillStyle = h<boss.hp? '#ff3a5a':'#553040';
+      roundRect(bx+h*(bw/boss.maxhp)+2, by, bw/boss.maxhp-4, 8, 3); ctx.fill();
+    }
+  }
+}
+function roundRect(x,y,w,h,r){ ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function roundRectC(x,y,w,h,r){ roundRect(x,y,w,h,r); }
+
+function drawFlag(){
+  if(!flag) return;
+  var fx=flag.x, top=0;
+  // 找旗桿底
+  var poleBottom=mapH*TILE;
+  for(var y=0;y<mapH;y++){ if(solidAt(Math.floor(fx/TILE),y)){ poleBottom=y*TILE; break; } }
+  var poleTop=poleBottom-TILE*7;
+  // 桿
+  ctx.fillStyle='#cfd8dc'; ctx.fillRect(fx-3,poleTop,6,poleBottom-poleTop);
+  // 球
+  ctx.fillStyle='#ffd166'; ctx.beginPath(); ctx.arc(fx,poleTop,7,0,7); ctx.fill();
+  // 旗
+  var wave=Math.sin(frame*0.1)*4;
+  ctx.fillStyle='#43d17a';
+  ctx.beginPath();
+  ctx.moveTo(fx+2,poleTop+8);
+  ctx.lineTo(fx+TILE*0.9+wave,poleTop+TILE*0.55);
+  ctx.lineTo(fx+2,poleTop+TILE*1.0);
+  ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='900 '+(TILE*0.5)+'px Trebuchet MS'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🏁', fx+TILE*0.4, poleTop+TILE*0.55);
+}
+
+function drawPlayer(){
+  if(player.dead && player.deadTimer>0){
+    // 死亡：旋轉墜落的波比
+    ctx.save();
+    ctx.translate(player.x+player.w/2, player.y+player.h/2);
+    ctx.rotate(player.deadTimer*0.2);
+    ctx.font=(player.h*1.1)+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('😵', 0,0);
+    ctx.restore();
+    return;
+  }
+  // 受傷閃爍
+  if(player.invuln>0 && Math.floor(player.invuln/4)%2===0 && player.star<=0){ return; }
+
+  var cx=player.x+player.w/2, cy=player.y+player.h/2;
+  var bounce = player.onGround? Math.abs(Math.sin(player.anim))*2 : 0;
+
+  ctx.save();
+  ctx.translate(cx, cy+bounce*0 );
+  // 無敵彩光
+  if(player.star>0){
+    var hue=(frame*12)%360;
+    ctx.shadowColor='hsl('+hue+',90%,60%)'; ctx.shadowBlur=16;
+  }
+  ctx.scale(player.facing, 1);
+  var sqx = !player.onGround ? (player.vy<0?0.93:1.07) : 1;
+  var sqy = !player.onGround ? (player.vy<0?1.08:0.93) : 1;
+  ctx.scale(sqx, sqy);
+  // 身體：依所選角色
+  var bw=player.w, bh=player.h;
+  var ch=curChar();
+  var bodyColor = player.star>0? 'hsl('+((frame*12)%360)+',80%,65%)' : (player.big?ch.bodyBig:ch.body);
+  // 身
+  ctx.fillStyle=bodyColor;
+  ctx.beginPath(); ctx.ellipse(0,bh*0.05,bw*0.5,bh*0.46,0,0,7); ctx.fill();
+  // 肚子
+  ctx.fillStyle='#fff6e0';
+  ctx.beginPath(); ctx.ellipse(0,bh*0.12,bw*0.3,bh*0.32,0,0,7); ctx.fill();
+  // 耳朵 / 頭部特徵（依角色）
+  ctx.fillStyle=bodyColor;
+  if(ch.id==='coco'){ // 兔子長耳
+    ctx.beginPath(); ctx.ellipse(-bw*0.2,-bh*0.55,bw*0.1,bh*0.28,-0.2,0,7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(bw*0.2,-bh*0.55,bw*0.1,bh*0.28,0.2,0,7); ctx.fill();
+    ctx.fillStyle=ch.ear;
+    ctx.beginPath(); ctx.ellipse(-bw*0.2,-bh*0.55,bw*0.05,bh*0.18,-0.2,0,7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(bw*0.2,-bh*0.55,bw*0.05,bh*0.18,0.2,0,7); ctx.fill();
+  }else if(ch.id==='mochi'){ // 貓尖耳
+    ctx.beginPath(); ctx.moveTo(-bw*0.38,-bh*0.3); ctx.lineTo(-bw*0.42,-bh*0.6); ctx.lineTo(-bw*0.15,-bh*0.4); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(bw*0.38,-bh*0.3); ctx.lineTo(bw*0.42,-bh*0.6); ctx.lineTo(bw*0.15,-bh*0.4); ctx.fill();
+    ctx.fillStyle=ch.ear;
+    ctx.beginPath(); ctx.moveTo(-bw*0.33,-bh*0.35); ctx.lineTo(-bw*0.36,-bh*0.52); ctx.lineTo(-bw*0.2,-bh*0.4); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(bw*0.33,-bh*0.35); ctx.lineTo(bw*0.36,-bh*0.52); ctx.lineTo(bw*0.2,-bh*0.4); ctx.fill();
+  }else if(ch.id==='pengu'){ // 企鵝小頭頂
+    ctx.beginPath(); ctx.ellipse(0,-bh*0.3,bw*0.42,bh*0.3,0,0,7); ctx.fill();
+  }else if(ch.id==='kuma'){ // 熊圓耳
+    ctx.beginPath(); ctx.arc(-bw*0.3,-bh*0.42,bw*0.14,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(bw*0.3,-bh*0.42,bw*0.14,0,7); ctx.fill();
+    ctx.fillStyle=ch.ear;
+    ctx.beginPath(); ctx.arc(-bw*0.3,-bh*0.42,bw*0.07,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(bw*0.3,-bh*0.42,bw*0.07,0,7); ctx.fill();
+  }else if(ch.id==='froggy'){ // 青蛙凸眼
+    ctx.beginPath(); ctx.arc(-bw*0.22,-bh*0.42,bw*0.16,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(bw*0.22,-bh*0.42,bw*0.16,0,7); ctx.fill();
+  }else{ // 倉鼠圓耳（預設）
+    ctx.beginPath(); ctx.arc(-bw*0.28,-bh*0.4,bw*0.16,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(bw*0.28,-bh*0.4,bw*0.16,0,7); ctx.fill();
+    ctx.fillStyle=ch.ear;
+    ctx.beginPath(); ctx.arc(-bw*0.28,-bh*0.4,bw*0.08,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(bw*0.28,-bh*0.4,bw*0.08,0,7); ctx.fill();
+  }
+  // 腳（走路擺動）
+  var lp=player.onGround? Math.sin(player.anim)*bw*0.18:bw*0.1;
+  ctx.fillStyle=ch.foot;
+  ctx.beginPath(); ctx.ellipse(-bw*0.18+lp, bh*0.46, bw*0.14,bh*0.08,0,0,7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(bw*0.18-lp, bh*0.46, bw*0.14,bh*0.08,0,0,7); ctx.fill();
+  // 眼睛
+  if(ch.id==='froggy'){
+    // 青蛙眼睛在凸起上
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(-bw*0.22,-bh*0.42,bw*0.09,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(bw*0.22,-bh*0.42,bw*0.09,0,7); ctx.fill();
+    ctx.fillStyle='#222';
+    ctx.beginPath(); ctx.arc(-bw*0.2,-bh*0.42,bw*0.05,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(bw*0.24,-bh*0.42,bw*0.05,0,7); ctx.fill();
+  }else{
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(bw*0.05,-bh*0.12,bw*0.15,0,7); ctx.fill();
+    ctx.fillStyle='#222';
+    ctx.beginPath(); ctx.arc(bw*0.1,-bh*0.12,bw*0.08,0,7); ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(bw*0.13,-bh*0.15,bw*0.03,0,7); ctx.fill();
+  }
+  // 鼻/嘴（企鵝畫橘色喙）
+  if(ch.id==='pengu'){
+    ctx.fillStyle='#ffb84d';
+    ctx.beginPath(); ctx.moveTo(bw*0.22,-bh*0.06); ctx.lineTo(bw*0.4,0); ctx.lineTo(bw*0.22,bh*0.04); ctx.fill();
+  }else{
+    ctx.fillStyle=ch.ear;
+    ctx.beginPath(); ctx.arc(bw*0.28,-bh*0.02,bw*0.06,0,7); ctx.fill();
+  }
+  // 腮紅
+  ctx.fillStyle='rgba(247,169,192,0.5)';
+  ctx.beginPath(); ctx.arc(-bw*0.1,bh*0.02,bw*0.1,0,7); ctx.fill();
+  ctx.restore();
+  ctx.shadowBlur=0;
+}
+
+function drawParticles(){
+  for(var i=0;i<particles.length;i++){
+    var p=particles[i];
+    ctx.globalAlpha=clamp(p.life/30,0,1);
+    ctx.fillStyle=p.color;
+    ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);
+  }
+  ctx.globalAlpha=1;
+}
+function drawFloaters(){
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(var i=0;i<floaters.length;i++){
+    var f=floaters[i];
+    ctx.globalAlpha=clamp(f.life/40,0,1);
+    ctx.font='900 '+(TILE*0.5)+'px Trebuchet MS';
+    ctx.fillStyle='rgba(0,0,0,0.4)';
+    ctx.fillText(f.txt,f.x+1.5,f.y+1.5);
+    ctx.fillStyle=f.color;
+    ctx.fillText(f.txt,f.x,f.y);
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ========================= HUD ========================= */
+function updateHUD(){
+  elLives.textContent=lives;
+  elCoins.textContent=coinCount;
+  elWorld.textContent=(levelIndex+1)+'-'+(lvl?lvl.name:'');
+}
+
+/* ========================= 主迴圈 ========================= */
+var lastT=0, acc=0, STEP=1000/60;
+function loop(t){
+  requestAnimationFrame(loop);
+  if(state!=='play'){ lastT=t; return; }
+  if(!lastT) lastT=t;
+  var dt=t-lastT; lastT=t;
+  if(dt>100) dt=100;
+  acc+=dt;
+  var steps=0;
+  while(acc>=STEP && steps<4){
+    tick();
+    acc-=STEP; steps++;
+  }
+  draw();
+}
+function tick(){
+  frame++;
+  // 計時
+  if(frame%60===0 && !levelDone){ timeLeft--; if(timeLeft<=0){ timeLeft=0; hardKill(); } updateHUD(); }
+
+  updatePlayer();
+  updateMovers();
+  updateEnemies();
+  updatePipes();
+  updateSprings();
+  updateBoss();
+  updateItems();
+  updateSpikes();
+  updateParticles();
+  updateCamera();
+
+  jumpJustPressed=false;
+
+  // 死亡 / 過關後處理
+  if(player.dead){
+    doneTimer++;
+    if(doneTimer>70){ doneTimer=0; onPlayerDeadEnd(); }
+  }
+  if(player.win){
+    doneTimer++;
+    if(doneTimer>110){ doneTimer=0; showResult(true); }
+  }
+}
+function onPlayerDeadEnd(){
+  lives--;
+  updateHUD();
+  if(lives<=0){ showResult(false); }
+  else { loadLevel(levelIndex); /* 重生 */ }
+}
+
+/* ========================= 畫面切換 ========================= */
+function show(id){ document.getElementById(id).classList.remove('hidden'); }
+function hide(id){ document.getElementById(id).classList.add('hidden'); }
+function hideAllOverlays(){ ['menuScreen','charScreen','levelScreen','resultScreen','pauseScreen'].forEach(hide); }
+
+function gotoMenu(){
+  state='menu'; hideAllOverlays(); show('menuScreen');
+  hide('hud'); hide('controls'); hide('pauseBtn');
+}
+function gotoCharSelect(){
+  state='char'; hideAllOverlays(); show('charScreen');
+  hide('hud'); hide('controls'); hide('pauseBtn');
+  buildCharGrid();
+}
+function buildCharGrid(){
+  var g=document.getElementById('charGrid');
+  g.innerHTML='';
+  for(var i=0;i<CHARACTERS.length;i++){
     (function(idx){
-      setTimeout(function(){
-        var p=document.createElement('div');
-        p.className='ptc';
-        p.textContent=emojis[idx%emojis.length];
-        p.style.left=(20+Math.random()*60)+'vw';
-        p.style.top=(30+Math.random()*40)+'vh';
-        document.body.appendChild(p);
-        setTimeout(function(){if(p.parentNode)p.parentNode.removeChild(p);},900);
-      },idx*150);
+      var c=CHARACTERS[idx];
+      var btn=document.createElement('button');
+      btn.className='char-btn'+(idx===charIndex?' selected':'');
+      btn.innerHTML=c.emoji+'<span class="char-check">✅</span>';
+      btn.onclick=function(){
+        charIndex=idx; persist(); sfxCoin();
+        buildCharGrid(); updateCharInfo();
+      };
+      g.appendChild(btn);
+    })(i);
+  }
+  updateCharInfo();
+}
+function updateCharInfo(){
+  var c=CHARACTERS[charIndex];
+  document.getElementById('charInfo').innerHTML='<span class="cname">'+c.name+'</span>　'+c.desc;
+}
+function gotoLevelSelect(){
+  state='level'; hideAllOverlays(); show('levelScreen');
+  hide('hud'); hide('controls'); hide('pauseBtn');
+  buildLevelGrid();
+}
+function startLevel(idx){
+  lives=3;
+  loadLevel(idx);
+  state='play'; hideAllOverlays();
+  show('hud'); show('controls'); show('pauseBtn');
+  updateHUD();
+  audio(); // 解鎖音訊（在使用者手勢中）
+}
+function showResult(win){
+  state='result';
+  hide('controls'); hide('pauseBtn');
+  show('resultScreen');
+  var emoji=document.getElementById('resultEmoji');
+  var title=document.getElementById('resultTitle');
+  var stats=document.getElementById('resultStats');
+  var nextBtn=document.getElementById('nextBtn');
+  if(win){
+    var stars=save.stars[levelIndex]||1;
+    var starStr='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+    emoji.textContent='🎉'; title.textContent='過關啦！'; title.className='result-title win';
+    stats.innerHTML=starStr+'<br>🪙 金幣：'+coinCount+'　⏱️ 剩餘：'+timeLeft;
+    if(levelIndex+1<LEVELS.length){ nextBtn.style.display=''; }
+    else{ nextBtn.style.display='none'; title.textContent='🏆 全破啦！'; stats.innerHTML=starStr+'<br>你救出了波比王國！太厲害了！'; }
+    sfxWin();
+  }else{
+    emoji.textContent='😢'; title.textContent='遊戲結束'; title.className='result-title lose';
+    stats.innerHTML='別灰心，再試一次！<br>🪙 收集了 '+coinCount+' 金幣';
+    nextBtn.style.display='none';
+    sfxLose();
+  }
+}
+
+/* ========================= 選關格子 ========================= */
+function buildLevelGrid(){
+  var gridEl=document.getElementById('lvlGrid');
+  gridEl.innerHTML='';
+  for(var i=0;i<LEVELS.length;i++){
+    (function(idx){
+      var unlocked = (idx+1)<=save.unlocked;
+      var btn=document.createElement('button');
+      btn.className='lvl-btn'+(unlocked?'':' locked');
+      var stars=save.stars[idx]||0;
+      var starHtml = unlocked && stars>0 ? '<div class="lvl-star">'+'⭐'.repeat(stars)+'</div>' : '';
+      btn.innerHTML = starHtml +
+        '<div>'+(unlocked? (idx+1):'🔒')+'</div>'+
+        '<div class="lvl-name">'+LEVELS[idx].name+'</div>';
+      if(unlocked){ btn.onclick=function(){ startLevel(idx); }; }
+      gridEl.appendChild(btn);
     })(i);
   }
 }
 
-// =============================================
-// 事件綁定（全部集中在這裡）
-// =============================================
-window.onload=function(){
-  load();
-  checkStreak();
+/* ========================= 輸入 ========================= */
+/* ====== 觸控核心：全域 pointer 追蹤 ======
+   每根手指記錄壓在哪個鍵；移動時即時重算（可滑動切換左右）；
+   放開或滑出畫面正確釋放。解決手機「不靈敏 / 卡鍵」問題。 */
+var touchBtns=[];
+var activePointers={}; // pointerId -> 按鍵id
 
-  // 標題畫面
-  initTitle();
-  document.getElementById('tProfile').onclick=function(){ showHub(); };
+function rectOf(el){ return el.getBoundingClientRect(); }
+function hitTest(x,y){
+  // 由上層往下找哪個按鍵被壓到（含一點外擴容差，手指不必壓很準）
+  for(var i=0;i<touchBtns.length;i++){
+    var b=touchBtns[i], r=rectOf(b.el);
+    var pad=14; // 觸控容差，邊緣也算數
+    if(x>=r.left-pad && x<=r.right+pad && y>=r.top-pad && y<=r.bottom+pad){
+      return b;
+    }
+  }
+  return null;
+}
+function setBtnState(btn,on){
+  if(!btn) return;
+  if(on){ btn.el.classList.add('pressed'); btn.on(); }
+  else  { btn.el.classList.remove('pressed'); btn.off(); }
+}
+function releaseAllTouch(){
+  for(var i=0;i<touchBtns.length;i++) setBtnState(touchBtns[i],false);
+  activePointers={};
+}
+function bindHold(id,on,off){
+  var el=document.getElementById(id);
+  if(!el) return;
+  touchBtns.push({id:id,el:el,on:on,off:off});
+}
+function recomputePressed(){
+  // 依目前所有手指所在位置，重算每個鍵該不該按下
+  var want={};
+  for(var pid in activePointers){
+    var bid=activePointers[pid];
+    if(bid) want[bid]=true;
+  }
+  for(var i=0;i<touchBtns.length;i++){
+    var b=touchBtns[i];
+    setBtnState(b, !!want[b.id]);
+  }
+}
 
-  // Hub
-  document.getElementById('dailyCard').onclick=function(){ startDaily(); };
+function setupInput(){
+  bindHold('btnLeft', function(){keys.left=true;}, function(){keys.left=false;});
+  bindHold('btnRight',function(){keys.right=true;},function(){keys.right=false;});
+  bindHold('btnRun',  function(){keys.run=true;}, function(){keys.run=false;});
+  bindHold('btnJump', function(){ keys.jump=true; jumpHeld=true; jumpJustPressed=true; },
+                      function(){ keys.jump=false; jumpHeld=false; });
 
-  // 遊戲
-  document.getElementById('gBack').onclick=function(){
-    document.getElementById('ovResult').className='overlay';
-    showHub();
-  };
-  document.getElementById('hintBtn').onclick=function(){ showHint(); };
-  document.getElementById('listenBtn').onclick=function(){
-    if(curWord){ speak(curWord.en); }
-    var btn=document.getElementById('listenBtn');
-    btn.className='listen-btn playing';
-    setTimeout(function(){ btn.className='listen-btn'; },1200);
-  };
+  var supportsPointer = ('PointerEvent' in window);
 
-  // 結果彈窗
-  document.getElementById('mBtn').onclick=function(){
-    document.getElementById('ovResult').className='overlay';
-    if(sess.lives<=0){ endSess(); return; }
-    nextQ();
-  };
+  if(supportsPointer){
+    window.addEventListener('pointerdown',function(e){
+      if(state!=='play') return;
+      var b=hitTest(e.clientX,e.clientY);
+      if(b){ e.preventDefault(); activePointers[e.pointerId]=b.id; recomputePressed(); }
+    },{passive:false});
+    window.addEventListener('pointermove',function(e){
+      if(state!=='play') return;
+      if(!(e.pointerId in activePointers)) return; // 只追蹤已按下的手指
+      e.preventDefault();
+      var b=hitTest(e.clientX,e.clientY);
+      activePointers[e.pointerId]= b? b.id : null; // 滑出按鍵→該指放開
+      recomputePressed();
+    },{passive:false});
+    function ptrEnd(e){
+      if(e.pointerId in activePointers){ delete activePointers[e.pointerId]; recomputePressed(); }
+    }
+    window.addEventListener('pointerup',ptrEnd,{passive:false});
+    window.addEventListener('pointercancel',ptrEnd,{passive:false});
+    window.addEventListener('pointerleave',ptrEnd,{passive:false});
+  }else{
+    // 後備：舊版 touch 事件
+    function handle(e){
+      if(state!=='play') return;
+      e.preventDefault();
+      var live={};
+      for(var i=0;i<e.touches.length;i++){
+        var t=e.touches[i], b=hitTest(t.clientX,t.clientY);
+        if(b) live[b.id]=true;
+      }
+      activePointers={};
+      var n=0; for(var k in live){ activePointers['t'+(n++)]=k; }
+      recomputePressed();
+    }
+    document.addEventListener('touchstart',handle,{passive:false});
+    document.addEventListener('touchmove',handle,{passive:false});
+    document.addEventListener('touchend',handle,{passive:false});
+    document.addEventListener('touchcancel',handle,{passive:false});
+    // 滑鼠後備（桌機）
+    var mouseBtn=null;
+    document.addEventListener('mousedown',function(e){
+      if(state!=='play') return;
+      var b=hitTest(e.clientX,e.clientY);
+      if(b){ mouseBtn=b; setBtnState(b,true); }
+    });
+    document.addEventListener('mouseup',function(){ if(mouseBtn){ setBtnState(mouseBtn,false); mouseBtn=null; } });
+  }
 
-  // 關卡完成
-  document.getElementById('ldBtn').onclick=function(){
-    document.getElementById('ovLevelDone').className='overlay';
-    showHub();
-  };
+  // 失焦／切到背景時全部放開，避免卡鍵
+  window.addEventListener('blur',releaseAllTouch);
+  document.addEventListener('visibilitychange',function(){ if(document.hidden) releaseAllTouch(); });
 
-  // 每日完成
-  document.getElementById('ddBtn').onclick=function(){
-    document.getElementById('ovDailyDone').className='overlay';
-    showHub();
-  };
+  // 鍵盤（桌機）
+  window.addEventListener('keydown',function(e){
+    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','Spacebar'].indexOf(e.key)>=0) e.preventDefault();
+    if(e.repeat) return;
+    var k=e.key.toLowerCase();
+    if(k==='arrowleft'||k==='a') keys.left=true;
+    if(k==='arrowright'||k==='d') keys.right=true;
+    if(k==='shift') keys.run=true;
+    if(k===' '||k==='arrowup'||k==='w'||k==='z'){ keys.jump=true; jumpHeld=true; jumpJustPressed=true; }
+    if(k==='escape'||k==='p'){ togglePause(); }
+  });
+  window.addEventListener('keyup',function(e){
+    var k=e.key.toLowerCase();
+    if(k==='arrowleft'||k==='a') keys.left=false;
+    if(k==='arrowright'||k==='d') keys.right=false;
+    if(k==='shift') keys.run=false;
+    if(k===' '||k==='arrowup'||k==='w'||k==='z'){ keys.jump=false; jumpHeld=false; }
+  });
 
-  // 底部導航
-  document.getElementById('bnHub').onclick=function(){
-    setBnav('bnHub'); renderHub(); showPg('pgHub');
-  };
-  document.getElementById('bnWord').onclick=function(){
-    setBnav('bnWord'); renderWordbook(); showPg('pgWord');
-  };
-  document.getElementById('bnRev').onclick=function(){
-    setBnav('bnRev'); startReview();
-  };
-  document.getElementById('bnStats').onclick=function(){
-    setBnav('bnStats'); renderStats(); showPg('pgStats');
-  };
+  // 防止整頁捲動
+  document.addEventListener('touchmove',function(e){ if(state==='play') e.preventDefault(); },{passive:false});
+}
 
-  // 單字本返回
-  document.getElementById('wbBack').onclick=function(){
-    setBnav('bnHub'); showPg('pgHub'); renderHub();
-  };
+function togglePause(){
+  if(state==='play'){ state='pause'; show('pauseScreen'); hide('controls'); }
+  else if(state==='pause'){ state='play'; hide('pauseScreen'); show('controls'); lastT=0; }
+}
 
-  // 統計返回
-  document.getElementById('stBack').onclick=function(){
-    setBnav('bnHub'); showPg('pgHub'); renderHub();
+/* ========================= 按鈕綁定 ========================= */
+function setupButtons(){
+  document.getElementById('startBtn').onclick=function(){ audio(); gotoCharSelect(); };
+  document.getElementById('charConfirm').onclick=function(){ gotoLevelSelect(); };
+  document.getElementById('charBack').onclick=gotoMenu;
+  document.getElementById('backToMenu').onclick=gotoCharSelect;
+  document.getElementById('retryBtn').onclick=function(){ startLevel(levelIndex); };
+  document.getElementById('nextBtn').onclick=function(){
+    if(levelIndex+1<LEVELS.length) startLevel(levelIndex+1); else gotoLevelSelect();
   };
+  document.getElementById('mapBtn').onclick=gotoLevelSelect;
+  document.getElementById('pauseBtn').onclick=togglePause;
+  document.getElementById('resumeBtn').onclick=togglePause;
+  document.getElementById('quitBtn').onclick=function(){ hide('pauseScreen'); gotoLevelSelect(); };
+}
 
-  // 顯示標題畫面
-  showPg('pgTitle');
-};
+/* ========================= 啟動 ========================= */
+function init(){
+  resize();
+  setupInput();
+  setupButtons();
+  gotoMenu();
+  requestAnimationFrame(loop);
+}
+if(document.readyState==='loading') window.addEventListener('DOMContentLoaded',init);
+else init();
+
+})();
+
+
 </script>
-
 </body>
 </html>
