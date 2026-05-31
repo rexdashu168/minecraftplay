@@ -187,11 +187,13 @@ window.onerror=function(msg,src,line,col){
 
 /* ========================= 常數 ========================= */
 var TILE=40;
-var GRAV=0.62, MAXFALL=15;
-var MOVE=0.85, FRICTION=0.82;
-var MAXVX_WALK=4.0, MAXVX_RUN=6.8;
-var JUMP=-12.4, JUMP_HOLD=-0.42, JUMP_HOLD_FRAMES=12;
-var COYOTE=6, JUMP_BUFFER=8;
+var GRAV=0.60, MAXFALL=15;
+var MOVE=0.9, FRICTION=0.82;
+var MAXVX_WALK=4.6, MAXVX_RUN=8.0;
+var AIR_ACCEL=0.55;            // 空中加速度（比地面弱，但保留操控）
+var JUMP=-11.6, JUMP_HOLD=-0.4, JUMP_HOLD_FRAMES=13;
+var COYOTE=7, JUMP_BUFFER=9;
+var GROUND_FRICTION=0.82, AIR_FRICTION=0.96; // 空中幾乎不減速→跳遠飽滿
 
 /* ========================= DOM ========================= */
 var cv=document.getElementById('cv');
@@ -283,20 +285,20 @@ var LEVELS=[
     ]
   },
   {
-    name:'彈跳草原', theme:'grass', time:300,
+    name:'彈跳樂園', theme:'grass', time:300,
     map:[
       "                                                                                            ",
-      "        C                      C                          C                                  ",
-      "                   ?  M  ?                        o o o                                      ",
-      "                                       o o o                                                |",
-      "             o o                  B B B B                          ^                        |",
-      "    o o                ===                            o o o              o o               |",
-      "  =====      g               J          g                    J              g              |",
-      "                                                                                            |",
-      "  S      o o        g              o o          g       o o          g          ====        |",
-      "XXXXXXXXXXXXXX    XXXXXXXXXX     XXXXXXXX    XXXXXXX    XXXXXXXX     XXXXXXXX    XXXXXXXXXXXXXX",
-      "XXXXXXXXXXXXXX    XXXXXXXXXX     XXXXXXXX    XXXXXXX    XXXXXXXX     XXXXXXXX    XXXXXXXXXXXXXX",
-      "XXXXXXXXXXXXXX    XXXXXXXXXX     XXXXXXXX    XXXXXXX    XXXXXXXX     XXXXXXXX    XXXXXXXXXXXXXX"
+      "          C                             C                           C                       ",
+      "                                                                                   o        ",
+      "                     o                  ^                                         o o       ",
+      "                    o o                                                                  |  ",
+      "                                        o                                        o          ",
+      "                   o                    o                                 o o               ",
+      "                                                                      o o XXX               ",
+      "                              ooo                           ooo   o o XXX XXX               ",
+      "  S  o o o o o    J       g             J       g ooo g           XXX XXX XXX   J           ",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX   XXXXXXXXXXXXXXXXXXXXXXXXXXX   XXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX   XXXXXXXXXXXXXXXXXXXXXXXXXXX   XXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     ]
   },
   {
@@ -751,18 +753,25 @@ function updatePlayer(){
     return;
   }
   var maxvx = keys.run? MAXVX_RUN : MAXVX_WALK;
-  var acc = MOVE * (keys.run?1.35:1);
-  var KICK=1.8; // 按下瞬間最低初速，消除起步延遲
+  var onGnd = player.onGround;
+  var acc = onGnd ? (MOVE*(keys.run?1.3:1)) : AIR_ACCEL; // 空中加速度較弱
+  var KICK=2.0; // 地面按下瞬間最低初速，消除起步延遲
   if(keys.left){
     player.vx-=acc; player.facing=-1;
-    if(player.vx>-KICK) player.vx=-KICK;        // 立刻有反應
+    if(onGnd && player.vx>-KICK) player.vx=-KICK;
   }
   if(keys.right){
     player.vx+=acc; player.facing=1;
-    if(player.vx<KICK) player.vx=KICK;
+    if(onGnd && player.vx<KICK) player.vx=KICK;
   }
-  if(!keys.left && !keys.right){ player.vx*=FRICTION; if(Math.abs(player.vx)<0.05) player.vx=0; }
-  player.vx=clamp(player.vx,-maxvx,maxvx);
+  if(!keys.left && !keys.right){
+    // 地面放開→乾脆停；空中放開→幾乎維持動量（跳遠飽滿）
+    player.vx *= onGnd ? GROUND_FRICTION : AIR_FRICTION;
+    if(Math.abs(player.vx)<0.05) player.vx=0;
+  }
+  // 速度上限：地面用 maxvx；空中以「起跳當下速度」為上限，維持動量但不暴衝
+  var cap = onGnd ? maxvx : (player.airCap||maxvx);
+  player.vx=clamp(player.vx,-cap,cap);
 
   // 跳躍：土狼+緩衝
   if(player.onGround) player.coyote=COYOTE; else if(player.coyote>0) player.coyote--;
@@ -771,6 +780,7 @@ function updatePlayer(){
   if(player.jumpBuf>0 && player.coyote>0){
     player.vy=JUMP; player.onGround=false; player.coyote=0; player.jumpBuf=0;
     player.jumpFrames=JUMP_HOLD_FRAMES; sfxJump();
+    player.airCap=Math.max(MAXVX_WALK, Math.abs(player.vx)); // 起跳瞬間速度→空中上限
     addParticles(player.x+player.w/2,player.y+player.h,'#fff',5,2);
   }
   // 可變跳躍高度
@@ -790,8 +800,8 @@ function updatePlayer(){
   if(player.invuln>0) player.invuln--;
   if(player.star>0){ player.star--; if(player.star===0) flash(''); }
 
-  // 掉出地圖 → 死
-  if(player.y>mapH*TILE+80){ killPlayer(); }
+  // 掉出地圖 → 直接死（大隻也不能變小逃過）
+  if(player.y>mapH*TILE+80){ hardKill(); }
 
   // 旗桿
   if(flag && !flag.reached){
@@ -802,12 +812,15 @@ function updatePlayer(){
 
 function killPlayer(){
   if(player.dead||player.win) return;
-  if(player.big && player.invuln<=0){
-    player.big=false; applyBigSize(); player.invuln=80; sfxHurt(); shake=5;
+  // 無敵時間內（剛受傷或吃星星）→ 完全免傷
+  if(player.invuln>0 || player.star>0) return;
+  // 大隻被打 → 只會變小，並給一段無敵閃爍時間，絕不直接死
+  if(player.big){
+    player.big=false; applyBigSize(); player.invuln=90; sfxHurt(); shake=5;
     addParticles(player.x+player.w/2,player.y+player.h/2,'#fff',12,5);
     return;
   }
-  if(player.invuln>0 && !player.dead) { /* 受傷無敵中，無事 */ }
+  // 小隻且非無敵 → 死亡
   player.dead=true; player.deadTimer=0; player.vy=-9; sfxHurt();
 }
 function hardKill(){ // 掉坑/尖刺直接死（不縮小）
@@ -1865,60 +1878,45 @@ function buildLevelGrid(){
 var touchBtns=[];
 var activePointers={}; // pointerId -> 按鍵id
 
-function rectOf(el){ return el.getBoundingClientRect(); }
-function hitTest(x,y){
-  // 由上層往下找哪個按鍵被壓到（含一點外擴容差，手指不必壓很準）
-  for(var i=0;i<touchBtns.length;i++){
-    var b=touchBtns[i], r=rectOf(b.el);
-    var pad=14; // 觸控容差，邊緣也算數
-    if(x>=r.left-pad && x<=r.right+pad && y>=r.top-pad && y<=r.bottom+pad){
-      return b;
-    }
+function btnIdAt(x,y){
+  // 用真實DOM命中測試，避開getBoundingClientRect受transform縮放的誤差
+  var el=document.elementFromPoint(x,y);
+  while(el){
+    if(el.id==='btnLeft'||el.id==='btnRight'||el.id==='btnRun'||el.id==='btnJump') return el.id;
+    el=el.parentElement;
   }
   return null;
 }
 function setBtnVisual(id,on){
-  for(var i=0;i<touchBtns.length;i++){
-    if(touchBtns[i].id===id){
-      if(on) touchBtns[i].el.classList.add('pressed');
-      else touchBtns[i].el.classList.remove('pressed');
-      return;
-    }
-  }
+  var el=document.getElementById(id);
+  if(!el) return;
+  if(on) el.classList.add('pressed'); else el.classList.remove('pressed');
 }
 function releaseAllTouch(){
   activePointers={};
   applyButtonStates({});
 }
-function bindHold(id,on,off){
-  var el=document.getElementById(id);
-  if(!el) return;
-  touchBtns.push({id:id,el:el});
-}
+function bindHold(id){ } // 保留空殼避免他處呼叫出錯
 // 目前哪些鍵被壓著（上一幀狀態），用來偵測「新壓下」
 var btnDown={left:false,right:false,run:false,jump:false};
 function applyButtonStates(want){
-  // 左右移動 + 衝刺：持續狀態，直接反映
   keys.left  = !!want.btnLeft;
   keys.right = !!want.btnRight;
   keys.run   = !!want.btnRun;
-  // 跳躍：按住狀態給 jumpHeld；只有「這一刻新壓下」才觸發起跳緩衝
   var jumpNow = !!want.btnJump;
   if(jumpNow && !btnDown.jump){
     jumpJustPressed=true;
-    if(player) player.jumpBuf=JUMP_BUFFER; // 直接灌緩衝，支援空中預輸入
+    if(player) player.jumpBuf=JUMP_BUFFER;
   }
   jumpHeld = jumpNow;
   keys.jump = jumpNow;
   btnDown.jump = jumpNow;
-  // 視覺
   setBtnVisual('btnLeft',  keys.left);
   setBtnVisual('btnRight', keys.right);
   setBtnVisual('btnRun',   keys.run);
   setBtnVisual('btnJump',  jumpNow);
 }
 function recomputePressed(){
-  // 依目前所有手指所在位置，算出每個鍵該不該按下
   var want={};
   for(var pid in activePointers){
     var bid=activePointers[pid];
@@ -1928,57 +1926,43 @@ function recomputePressed(){
 }
 
 function setupInput(){
-  bindHold('btnLeft'); bindHold('btnRight'); bindHold('btnRun'); bindHold('btnJump');
-
-  var supportsPointer = ('PointerEvent' in window);
-
-  if(supportsPointer){
-    window.addEventListener('pointerdown',function(e){
-      if(state!=='play') return;
-      var b=hitTest(e.clientX,e.clientY);
-      if(b){ e.preventDefault(); activePointers[e.pointerId]=b.id; recomputePressed(); }
-    },{passive:false});
-    window.addEventListener('pointermove',function(e){
-      if(state!=='play') return;
-      if(!(e.pointerId in activePointers)) return;
-      var b=hitTest(e.clientX,e.clientY);
-      var newId = b? b.id : null;
-      if(activePointers[e.pointerId]!==newId){ // 只有真的換了鍵才重算
-        e.preventDefault();
-        activePointers[e.pointerId]=newId;
-        recomputePressed();
-      }
-    },{passive:false});
-    function ptrEnd(e){
-      if(e.pointerId in activePointers){ delete activePointers[e.pointerId]; recomputePressed(); }
+  // 用 touch 事件 + elementFromPoint，逐指追蹤
+  function refreshFromTouches(touchList){
+    activePointers={};
+    var n=0;
+    for(var i=0;i<touchList.length;i++){
+      var t=touchList[i];
+      var id=btnIdAt(t.clientX,t.clientY);
+      if(id) activePointers['t'+(n++)]=id;
     }
-    window.addEventListener('pointerup',ptrEnd,{passive:false});
-    window.addEventListener('pointercancel',ptrEnd,{passive:false});
-  }else{
-    // 後備：舊版 touch 事件
-    function handle(e){
-      if(state!=='play') return;
-      e.preventDefault();
-      activePointers={};
-      var n=0;
-      for(var i=0;i<e.touches.length;i++){
-        var t=e.touches[i], b=hitTest(t.clientX,t.clientY);
-        if(b) activePointers['t'+(n++)]=b.id;
-      }
-      recomputePressed();
-    }
-    document.addEventListener('touchstart',handle,{passive:false});
-    document.addEventListener('touchmove',handle,{passive:false});
-    document.addEventListener('touchend',handle,{passive:false});
-    document.addEventListener('touchcancel',handle,{passive:false});
-    var mouseBtn=null;
-    document.addEventListener('mousedown',function(e){
-      if(state!=='play') return;
-      var b=hitTest(e.clientX,e.clientY);
-      if(b){ mouseBtn=b.id; activePointers['mouse']=b.id; recomputePressed(); }
-    });
-    document.addEventListener('mouseup',function(){ if(mouseBtn){ delete activePointers['mouse']; mouseBtn=null; recomputePressed(); } });
+    recomputePressed();
   }
+  function onTouch(e){
+    if(state!=='play') return;
+    // 只要有手指落在控制鈕上就吃掉預設行為（避免捲動）
+    e.preventDefault();
+    refreshFromTouches(e.touches);
+  }
+  var gameEl=document.getElementById('game');
+  // 綁在整個遊戲區，捕捉所有手指
+  document.addEventListener('touchstart',onTouch,{passive:false});
+  document.addEventListener('touchmove',onTouch,{passive:false});
+  document.addEventListener('touchend',onTouch,{passive:false});
+  document.addEventListener('touchcancel',onTouch,{passive:false});
+
+  // 桌機滑鼠後備
+  var mouseId=null;
+  document.addEventListener('mousedown',function(e){
+    if(state!=='play') return;
+    var id=btnIdAt(e.clientX,e.clientY);
+    if(id){ mouseId=id; activePointers['mouse']=id; recomputePressed(); }
+  });
+  document.addEventListener('mousemove',function(e){
+    if(state!=='play'||!mouseId) return;
+    var id=btnIdAt(e.clientX,e.clientY);
+    activePointers['mouse']=id; mouseId=id; recomputePressed();
+  });
+  document.addEventListener('mouseup',function(){ if(mouseId!==null){ delete activePointers['mouse']; mouseId=null; recomputePressed(); } });
 
   // 失焦／切到背景時全部放開，避免卡鍵
   window.addEventListener('blur',releaseAllTouch);
@@ -2040,7 +2024,6 @@ if(document.readyState==='loading') window.addEventListener('DOMContentLoaded',i
 else init();
 
 })();
-
 
 </script>
 </body>
