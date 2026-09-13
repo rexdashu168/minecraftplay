@@ -497,7 +497,83 @@ var LEVELS=[
   }
 ];
 
-/* 十二關先重整為四個世界；每世界第三關是素材保證掉落的困難關。 */
+/* 四個世界各追加一個獨立困難關，形成「三關冒險＋一關挑戰」節奏。 */
+var CORE_LEVELS=LEVELS.slice();
+var HARD_LEVELS=[
+  {
+    name:'巨木守護戰',theme:'forest',time:250,
+    map:[
+      "                                                                                  ",
+      "       C                    C                        C                            ",
+      "           o o       ? M ?              o o o                    ^             ",
+      "       ====       ====           H                 ====                       |",
+      "  S                 j                   o o                 j                  |",
+      "  ====     s s   ======        ======         s s   ======                  |",
+      "                         J                         J                           |",
+      "        g          c              @                 c          g              |",
+      "     =====      =====          =========         =====      =====            |",
+      "                                                                            |",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    ]
+  },
+  {
+    name:'深海守護獸',theme:'water',time:260,
+    map:[
+      "                                                                                    ",
+      "        o o o              ^               o o o                M                 ",
+      "      =======       V             ====              H                         |",
+      "  S            f           f              f                 f                  |",
+      "  ====      =====       =====          =====       =====          ====         |",
+      "          s       s             J              s          J                   |",
+      "               o o       c           @              c          o o            |",
+      "       =====       =====          =========       =====          =====         |",
+      "                                                                                |",
+      "                                                                                |",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    ]
+  },
+  {
+    name:'雷雲龍王',theme:'sky',time:240,
+    map:[
+      "                                                                                  ",
+      "      C                C                 C                  C                     ",
+      "          o o        ^ ^ ^         o o o          ? M ?                       |",
+      "  S    H          V          H               V                H                 |",
+      "  ====      ====       ====       ====       ====       ====       ====         |",
+      "          f       s s       f           f        s s       f                  |",
+      "                     J              @              J                          |",
+      "       =====       =====        ===========       =====       =====           |",
+      "                                                                            |",
+      "                                                                            |",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    ]
+  },
+  {
+    name:'終焉魔王城',theme:'boss',time:220,
+    map:[
+      "                                                                                      ",
+      "      o o o           ^ ^ ^           ? M ?             o o o                       ",
+      "  S      J       H              V               H             J                    |",
+      "  ====       ====       ====        ====       ====       ====       ====           |",
+      "        s s       j          s s          c          s s        j                  |",
+      "                  =====            ===========             =====                  |",
+      "          f                    @                    f                              |",
+      "       =====              =============              =====                      |",
+      "                                                                              |",
+      "                                                                              |",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    ]
+  }
+];
+LEVELS=[];
+for(var wi=0;wi<4;wi++){
+  for(var ci=0;ci<3;ci++) LEVELS.push(CORE_LEVELS[wi*3+ci]);
+  LEVELS.push(HARD_LEVELS[wi]);
+}
 var WORLDS=[
   {name:'綠野島',icon:'🌿',material:'seed'},
   {name:'奇幻島',icon:'💧',material:'crystal'},
@@ -509,9 +585,9 @@ var MATERIALS={
   moon:{name:'月光石',icon:'🌙'}, ice:{name:'冰晶',icon:'❄️'}, star:{name:'星之核心',icon:'✨'}
 };
 for(var li=0;li<LEVELS.length;li++){
-  LEVELS[li].world=Math.floor(li/3);
-  LEVELS[li].stage=(li%3)+1;
-  LEVELS[li].hard=(li%3)===2;
+  LEVELS[li].world=Math.floor(li/4);
+  LEVELS[li].stage=(li%4)+1;
+  LEVELS[li].hard=(li%4)===3;
   LEVELS[li].reward=LEVELS[li].hard ? WORLDS[LEVELS[li].world].material : null;
 }
 
