@@ -67,6 +67,17 @@ canvas{display:block;width:100%;height:100%;}
 .char-btn.selected .char-check{display:block;}
 .char-info{margin-top:14px;color:#ffe9b8;font-weight:800;font-size:1.05rem;min-height:1.4em;letter-spacing:1px;}
 .char-info .cname{color:#ffd166;font-size:1.2rem;}
+.material-bar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0 2px;max-width:390px;}
+.material-chip{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:5px 10px;color:#eef;font-size:.8rem;font-weight:800;}
+.stage-badge{position:absolute;left:5px;bottom:5px;background:rgba(15,18,40,.82);border-radius:999px;color:#ffe66d;font-size:.62rem;padding:3px 6px;letter-spacing:-1px;}
+.evolve-btn{margin-top:10px;padding:11px 22px;border:0;border-radius:999px;font-weight:900;color:#4a3000;background:linear-gradient(145deg,#ffe66d,#ffad33);box-shadow:0 4px 0 #b87900;cursor:pointer;}
+.evolve-btn:disabled{filter:grayscale(1);opacity:.48;cursor:not-allowed;box-shadow:none;}
+.world-heading{grid-column:1/-1;text-align:left;color:#ffe9b8;font-weight:900;font-size:.92rem;padding:8px 3px 0;letter-spacing:1px;}
+.lvl-btn.hard{border-color:#ff8a5c;background:linear-gradient(145deg,#713750,#3f243d);}
+.hard-tag{position:absolute;left:5px;top:5px;background:#ff6847;color:#fff;border-radius:999px;padding:2px 5px;font-size:.52rem;}
+.evolve-card{max-width:380px;width:100%;padding:24px;border-radius:28px;border:2px solid rgba(255,230,109,.5);background:radial-gradient(circle at 50% 20%,rgba(255,220,100,.22),rgba(255,255,255,.06));}
+.evolve-hero{font-size:5.8rem;filter:drop-shadow(0 0 20px rgba(255,230,109,.8));animation:heroHop 1.4s ease-in-out infinite;}
+#levelScreen,#charScreen{justify-content:flex-start;padding-top:max(28px,env(safe-area-inset-top));padding-bottom:max(30px,env(safe-area-inset-bottom));}
 .lvl-btn{aspect-ratio:1;border-radius:18px;border:3px solid rgba(255,255,255,.2);cursor:pointer;
   background:linear-gradient(145deg,#4a5d8a,#2d3a59);color:#fff;font-weight:900;font-size:1.5rem;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
@@ -145,8 +156,19 @@ canvas{display:block;width:100%;height:100%;}
   <div class="title-sub" style="margin-bottom:4px;">挑一隻一起冒險！</div>
   <div class="char-grid" id="charGrid"></div>
   <div class="char-info" id="charInfo"></div>
+  <div class="material-bar" id="materialBar"></div>
+  <button class="evolve-btn" id="evolveBtn">進化夥伴 ✨</button>
   <button class="big-btn" id="charConfirm">就決定是你了！▶</button>
   <button class="small-btn" id="charBack" style="margin-top:10px;">← 返回</button>
+</div>
+
+<div class="overlay hidden" id="evolveScreen">
+  <div class="evolve-card">
+    <div class="evolve-hero" id="evolveHero">🐹</div>
+    <div class="title-logo" id="evolveTitle" style="font-size:2.15rem;">進化成功！</div>
+    <div class="result-stats" id="evolveText"></div>
+    <button class="big-btn" id="evolveDone">太棒了！</button>
+  </div>
 </div>
 
 <div class="overlay hidden" id="levelScreen">
@@ -253,8 +275,14 @@ function sfxBossHurt(){ beep(220,0.14,'sawtooth',0.10); setTimeout(function(){be
 
 /* ========================= 存檔 ========================= */
 function loadSave(){
-  try{ var s=localStorage.getItem('pobbyAdventureV2'); if(s) return JSON.parse(s); }catch(e){}
-  return {unlocked:1, stars:{}, bestCoins:{}, charIndex:0};
+  var data=null;
+  try{ var s=localStorage.getItem('pobbyAdventureV2'); if(s) data=JSON.parse(s); }catch(e){}
+  if(!data) data={unlocked:1, stars:{}, bestCoins:{}, charIndex:0};
+  data.unlocked=Math.max(1,data.unlocked||1);
+  data.stars=data.stars||{}; data.bestCoins=data.bestCoins||{};
+  data.materials=data.materials||{}; data.evolutions=data.evolutions||{};
+  data.hardRewards=data.hardRewards||{};
+  return data;
 }
 var save=loadSave();
 function persist(){ try{ save.charIndex=charIndex; localStorage.setItem('pobbyAdventureV2',JSON.stringify(save)); }catch(e){} }
@@ -469,6 +497,24 @@ var LEVELS=[
   }
 ];
 
+/* 十二關先重整為四個世界；每世界第三關是素材保證掉落的困難關。 */
+var WORLDS=[
+  {name:'綠野島',icon:'🌿',material:'seed'},
+  {name:'奇幻島',icon:'💧',material:'crystal'},
+  {name:'天空島',icon:'☁️',material:'moon'},
+  {name:'終極島',icon:'❄️',material:'ice'}
+];
+var MATERIALS={
+  seed:{name:'成長種子',icon:'🌱'}, crystal:{name:'水晶碎片',icon:'💎'},
+  moon:{name:'月光石',icon:'🌙'}, ice:{name:'冰晶',icon:'❄️'}, star:{name:'星之核心',icon:'✨'}
+};
+for(var li=0;li<LEVELS.length;li++){
+  LEVELS[li].world=Math.floor(li/3);
+  LEVELS[li].stage=(li%3)+1;
+  LEVELS[li].hard=(li%3)===2;
+  LEVELS[li].reward=LEVELS[li].hard ? WORLDS[LEVELS[li].world].material : null;
+}
+
 /* ========================= 主題配色 ========================= */
 var THEMES={
   grass:{ sky1:'#7ec0ee', sky2:'#c8eaff', ground:'#7a4f2a', groundTop:'#4caf50', brick:'#c0703a',
@@ -493,15 +539,22 @@ var THEMES={
 
 /* ========================= 角色 ========================= */
 var CHARACTERS=[
-  {id:'pobby', name:'波比', emoji:'🐹', body:'#f7c873', bodyBig:'#f5b942', ear:'#f7a9c0', foot:'#e89a4a', desc:'勇敢的小倉鼠'},
-  {id:'mochi', name:'麻吉', emoji:'🐱', body:'#d8d8e0', bodyBig:'#c5c5d2', ear:'#f7b8c8', foot:'#b5b5c2', desc:'敏捷的小貓咪'},
-  {id:'coco',  name:'可可', emoji:'🐰', body:'#fff0e8', bodyBig:'#f5e0d2', ear:'#f7b8c8', foot:'#e8d0c0', desc:'會跳的小兔子'},
-  {id:'kuma',  name:'熊熊', emoji:'🐻', body:'#c89456', bodyBig:'#b07a3a', ear:'#8a5a2a', foot:'#8a5a2a', desc:'力氣大的小熊'},
-  {id:'pengu', name:'波波', emoji:'🐧', body:'#3a4a5a', bodyBig:'#2a3a4a', ear:'#ffb84d', foot:'#ffb84d', desc:'滑溜的小企鵝'},
-  {id:'froggy',name:'呱呱', emoji:'🐸', body:'#7ac85a', bodyBig:'#5da83f', ear:'#f7e84d', foot:'#5da83f', desc:'彈跳力滿點'}
+  {id:'pobby', name:'波比', emoji:'🐹', body:'#f7c873', bodyBig:'#f5b942', ear:'#f7a9c0', foot:'#e89a4a', desc:'勇敢的小倉鼠',material:'seed',forms:['波比','探險波比','星耀波比'],ability:['勇氣出發','每五枚金幣多得一枚','開場星光護盾']},
+  {id:'mochi', name:'麻吉', emoji:'🐱', body:'#d8d8e0', bodyBig:'#c5c5d2', ear:'#f7b8c8', foot:'#b5b5c2', desc:'敏捷的小貓咪',material:'moon',forms:['麻吉','疾風麻吉','幻影麻吉'],ability:['靈巧步伐','疾風加速','幻影衝刺']},
+  {id:'coco', name:'可可', emoji:'🐰', body:'#fff0e8', bodyBig:'#f5e0d2', ear:'#f7b8c8', foot:'#e8d0c0', desc:'會跳的小兔子',material:'seed',forms:['可可','飛躍可可','月光可可'],ability:['輕盈跳躍','空中二段跳','強化二段跳']},
+  {id:'kuma', name:'熊熊', emoji:'🐻', body:'#c89456', bodyBig:'#b07a3a', ear:'#8a5a2a', foot:'#8a5a2a', desc:'力氣大的小熊',material:'crystal',forms:['熊熊','守護熊熊','泰坦熊熊'],ability:['強壯體魄','開場護盾','堅毅守護']},
+  {id:'pengu', name:'波波', emoji:'🐧', body:'#3a4a5a', bodyBig:'#2a3a4a', ear:'#ffb84d', foot:'#ffb84d', desc:'滑溜的小企鵝',material:'ice',forms:['波波','冰晶波波','極光波波'],ability:['滑行高手','長距離滑翔','極光滑翔']},
+  {id:'froggy',name:'呱呱', emoji:'🐸', body:'#7ac85a', bodyBig:'#5da83f', ear:'#f7e84d', foot:'#5da83f', desc:'彈跳力滿點',material:'crystal',forms:['呱呱','彈簧呱呱','雷鳴呱呱'],ability:['彈力十足','超級跳躍','雷鳴落地']}
 ];
 var charIndex=0;
 function curChar(){ return CHARACTERS[charIndex]; }
+function charStage(c){ return Math.max(1,Math.min(3,save.evolutions[c.id]||1)); }
+function evolveCost(c){ var st=charStage(c); return st===1?{main:1,star:0}:{main:2,star:1}; }
+function canEvolve(c){
+  var st=charStage(c); if(st>=3) return false;
+  var cost=evolveCost(c);
+  return (save.materials[c.material]||0)>=cost.main && (save.materials.star||0)>=cost.star;
+}
 if(save && typeof save.charIndex==='number' && save.charIndex>=0 && save.charIndex<CHARACTERS.length) charIndex=save.charIndex;
 
 /* ========================= 全域狀態 ========================= */
@@ -528,6 +581,14 @@ function addParticles(x,y,color,n,spread){
     particles.push({x:x,y:y,vx:rand(-spread,spread),vy:rand(-spread,1),
       life:rand(20,40),color:color,size:rand(2,5)});
   }
+}
+function gainCoin(){
+  coinCount++;
+  if(player){
+    player.coinStreak=(player.coinStreak||0)+1;
+    if(curChar().id==='pobby' && charStage(curChar())>=2 && player.coinStreak%5===0){ coinCount++; flash('🐹 金幣感應＋1'); }
+  }
+  sfxCoin(); updateHUD();
 }
 
 /* ========================= 載入關卡 ========================= */
@@ -564,6 +625,11 @@ function loadLevel(idx){
   player.vx=0; player.vy=0; player.onGround=false; player.facing=1;
   player.coyote=0; player.jumpBuf=0; player.jumpFrames=0; player.dead=false;
   player.deadTimer=0; player.anim=0; player.win=false;
+  var initialStage=charStage(curChar());
+  if(curChar().id==='kuma' && initialStage>=2) player.invuln=initialStage===3?240:150;
+  if(curChar().id==='pobby' && initialStage>=3) player.invuln=180;
+  player.airJumps=(curChar().id==='coco' && initialStage>=2)?1:0;
+  player.coinStreak=0;
   // 找 S
   var sx=1,sy=mapH-3;
   for(var yy=0;yy<mapH;yy++) for(var xx=0;xx<mapW;xx++){ if((rows[yy][xx]||' ')==='S'){ sx=xx; sy=yy; } }
@@ -698,7 +764,7 @@ function hitBlockFromBelow(tx,ty){
         }else{ sfxBump(); }
       }else if(b.type==='coin'){
         b.used=true; grid[ty][tx]=1;
-        coinCount++; addFloat(b.x+TILE/2,b.y,'+1','#ffd166'); sfxCoin(); updateHUD();
+        gainCoin(); addFloat(b.x+TILE/2,b.y,'+1','#ffd166');
         addParticles(b.x+TILE/2,b.y,'#ffd166',6,3);
       }else if(b.type==='mushroom'){
         b.used=true; grid[ty][tx]=1;
@@ -753,7 +819,9 @@ function updatePlayer(){
     player.y+=player.vy;
     return;
   }
-  var maxvx = keys.run? MAXVX_RUN : MAXVX_WALK;
+  var activeChar=curChar(), activeStage=charStage(activeChar);
+  var speedBoost=(activeChar.id==='mochi' && activeStage>=2)?(activeStage===3?1.28:1.14):1;
+  var maxvx = (keys.run? MAXVX_RUN : MAXVX_WALK)*speedBoost;
   var onGnd = player.onGround;
   var acc = onGnd ? (MOVE*(keys.run?1.3:1)) : AIR_ACCEL; // 空中加速度較弱
   var KICK=2.0; // 地面按下瞬間最低初速，消除起步延遲
@@ -778,8 +846,14 @@ function updatePlayer(){
   if(player.onGround) player.coyote=COYOTE; else if(player.coyote>0) player.coyote--;
   if(jumpJustPressed) player.jumpBuf=JUMP_BUFFER; else if(player.jumpBuf>0) player.jumpBuf--;
 
-  if(player.jumpBuf>0 && player.coyote>0){
-    player.vy=JUMP; player.onGround=false; player.coyote=0; player.jumpBuf=0;
+  if(player.jumpBuf>0 && (player.coyote>0 || player.airJumps>0)){
+    var airJump=player.coyote<=0;
+    var jumpPower=JUMP;
+    if(activeChar.id==='froggy') jumpPower-=activeStage===3?2.0:(activeStage===2?1.1:0.45);
+    if(activeChar.id==='coco' && activeStage===3) jumpPower-=0.7;
+    player.vy=jumpPower; player.onGround=false;
+    if(airJump) player.airJumps--; else player.coyote=0;
+    player.jumpBuf=0;
     player.jumpFrames=JUMP_HOLD_FRAMES; sfxJump();
     player.airCap=Math.max(MAXVX_WALK, Math.abs(player.vx)); // 起跳瞬間速度→空中上限
     addParticles(player.x+player.w/2,player.y+player.h,'#fff',5,2);
@@ -788,11 +862,14 @@ function updatePlayer(){
   if(player.jumpFrames>0 && jumpHeld && player.vy<0){ player.vy+=JUMP_HOLD; player.jumpFrames--; }
   else player.jumpFrames=0;
 
-  player.vy+=GRAV;
+  var gravity=GRAV;
+  if(activeChar.id==='pengu' && activeStage>=2 && jumpHeld && player.vy>0) gravity*=activeStage===3?0.42:0.62;
+  player.vy+=gravity;
   if(player.vy>MAXFALL) player.vy=MAXFALL;
 
   movePlayerX(player.vx);
   movePlayerY(player.vy);
+  if(player.onGround && activeChar.id==='coco' && activeStage>=2) player.airJumps=1;
 
   // 動畫計時
   if(Math.abs(player.vx)>0.3 && player.onGround) player.anim+=Math.abs(player.vx)*0.15;
@@ -838,6 +915,21 @@ function winLevel(){
   if(!save.stars[levelIndex] || save.stars[levelIndex]<stars) save.stars[levelIndex]=stars;
   if(!save.bestCoins[levelIndex] || save.bestCoins[levelIndex]<coinCount) save.bestCoins[levelIndex]=coinCount;
   if(levelIndex+1<LEVELS.length && save.unlocked<levelIndex+2) save.unlocked=levelIndex+2;
+  if(lvl.hard){
+    var first=!save.hardRewards[levelIndex];
+    var reward=lvl.reward;
+    lvl.lastRewards=[];
+    if(first || Math.random()<0.45){
+      save.materials[reward]=(save.materials[reward]||0)+1;
+      save.hardRewards[levelIndex]=true;
+      lvl.lastRewards.push(reward);
+      flash(MATERIALS[reward].icon+' 獲得'+MATERIALS[reward].name+'！');
+    }
+    if(levelIndex===LEVELS.length-1 && (first || Math.random()<0.45)){
+      save.materials.star=(save.materials.star||0)+1;
+      lvl.lastRewards.push('star');
+    }
+  }else lvl.lastRewards=[];
   persist();
   doneTimer=0; levelDone=true;
 }
@@ -968,7 +1060,7 @@ function updateItems(){
   for(var i=coins.length-1;i>=0;i--){
     var c=coins[i]; c.anim+=0.18;
     if(!player.dead && !player.win && rectsOverlap(player,c)){
-      coins.splice(i,1); coinCount++; sfxCoin(); updateHUD();
+      coins.splice(i,1); gainCoin();
       addFloat(c.x,c.y,'+1','#ffd166'); addParticles(c.x+c.w/2,c.y+c.h/2,'#ffd166',6,3);
     }
   }
@@ -1782,7 +1874,7 @@ function onPlayerDeadEnd(){
 /* ========================= 畫面切換 ========================= */
 function show(id){ document.getElementById(id).classList.remove('hidden'); }
 function hide(id){ document.getElementById(id).classList.add('hidden'); }
-function hideAllOverlays(){ ['menuScreen','charScreen','levelScreen','resultScreen','pauseScreen'].forEach(hide); }
+function hideAllOverlays(){ ['menuScreen','charScreen','levelScreen','resultScreen','pauseScreen','evolveScreen'].forEach(hide); }
 
 function gotoMenu(){
   state='menu'; hideAllOverlays(); show('menuScreen');
@@ -1799,9 +1891,10 @@ function buildCharGrid(){
   for(var i=0;i<CHARACTERS.length;i++){
     (function(idx){
       var c=CHARACTERS[idx];
+      var stage=charStage(c);
       var btn=document.createElement('button');
       btn.className='char-btn'+(idx===charIndex?' selected':'');
-      btn.innerHTML=c.emoji+'<span class="char-check">✅</span>';
+      btn.innerHTML=c.emoji+'<span class="stage-badge">'+'★'.repeat(stage)+'</span><span class="char-check">✅</span>';
       btn.onclick=function(){
         charIndex=idx; persist(); sfxCoin();
         buildCharGrid(); updateCharInfo();
@@ -1813,7 +1906,24 @@ function buildCharGrid(){
 }
 function updateCharInfo(){
   var c=CHARACTERS[charIndex];
-  document.getElementById('charInfo').innerHTML='<span class="cname">'+c.name+'</span>　'+c.desc;
+  var stage=charStage(c), cost=evolveCost(c), mat=MATERIALS[c.material];
+  document.getElementById('charInfo').innerHTML='<span class="cname">'+c.forms[stage-1]+'</span>　'+c.desc+'<br><small>能力：'+c.ability[stage-1]+'</small>';
+  var chips=[];
+  Object.keys(MATERIALS).forEach(function(k){ var m=MATERIALS[k]; chips.push('<span class="material-chip">'+m.icon+' '+m.name+' '+(save.materials[k]||0)+'</span>'); });
+  document.getElementById('materialBar').innerHTML=chips.join('');
+  var eb=document.getElementById('evolveBtn');
+  if(stage>=3){ eb.textContent='已達最終進化 ★★★'; eb.disabled=true; }
+  else{ eb.textContent='進化：'+mat.icon+'×'+cost.main+(cost.star?'＋✨×'+cost.star:''); eb.disabled=!canEvolve(c); }
+}
+function evolveSelected(){
+  var c=curChar(), stage=charStage(c); if(stage>=3 || !canEvolve(c)) return;
+  var cost=evolveCost(c);
+  save.materials[c.material]-=cost.main; if(cost.star) save.materials.star-=cost.star;
+  save.evolutions[c.id]=stage+1; persist(); sfxPower();
+  document.getElementById('evolveHero').textContent=c.emoji;
+  document.getElementById('evolveTitle').textContent=c.forms[stage]+'！';
+  document.getElementById('evolveText').innerHTML='進化成功！<br>新能力：'+c.ability[stage];
+  state='evolve'; hideAllOverlays(); show('evolveScreen');
 }
 function gotoLevelSelect(){
   state='level'; hideAllOverlays(); show('levelScreen');
@@ -1840,7 +1950,8 @@ function showResult(win){
     var stars=save.stars[levelIndex]||1;
     var starStr='⭐'.repeat(stars)+'☆'.repeat(3-stars);
     emoji.textContent='🎉'; title.textContent='過關啦！'; title.className='result-title win';
-    stats.innerHTML=starStr+'<br>🪙 金幣：'+coinCount+'　⏱️ 剩餘：'+timeLeft;
+    var rewardText=(lvl.lastRewards||[]).map(function(k){ return MATERIALS[k].icon+' 獲得'+MATERIALS[k].name; }).join('　');
+    stats.innerHTML=starStr+'<br>🪙 金幣：'+coinCount+'　⏱️ 剩餘：'+timeLeft+(rewardText?'<br>'+rewardText:'');
     if(levelIndex+1<LEVELS.length){ nextBtn.style.display=''; }
     else{ nextBtn.style.display='none'; title.textContent='🏆 全破啦！'; stats.innerHTML=starStr+'<br>你救出了波比王國！太厲害了！'; }
     sfxWin();
@@ -1857,14 +1968,20 @@ function buildLevelGrid(){
   var gridEl=document.getElementById('lvlGrid');
   gridEl.innerHTML='';
   for(var i=0;i<LEVELS.length;i++){
+    if(i===0 || LEVELS[i].world!==LEVELS[i-1].world){
+      var wh=document.createElement('div'); wh.className='world-heading';
+      wh.textContent=WORLDS[LEVELS[i].world].icon+' 世界 '+(LEVELS[i].world+1)+'｜'+WORLDS[LEVELS[i].world].name;
+      gridEl.appendChild(wh);
+    }
     (function(idx){
       var unlocked = (idx+1)<=save.unlocked;
       var btn=document.createElement('button');
-      btn.className='lvl-btn'+(unlocked?'':' locked');
+      btn.className='lvl-btn'+(unlocked?'':' locked')+(LEVELS[idx].hard?' hard':'');
       var stars=save.stars[idx]||0;
       var starHtml = unlocked && stars>0 ? '<div class="lvl-star">'+'⭐'.repeat(stars)+'</div>' : '';
       btn.innerHTML = starHtml +
-        '<div>'+(unlocked? (idx+1):'🔒')+'</div>'+
+        (LEVELS[idx].hard?'<span class="hard-tag">困難</span>':'')+
+        '<div>'+(unlocked? ((LEVELS[idx].world+1)+'-'+LEVELS[idx].stage):'🔒')+'</div>'+
         '<div class="lvl-name">'+LEVELS[idx].name+'</div>';
       if(unlocked){ btn.onclick=function(){ startLevel(idx); }; }
       gridEl.appendChild(btn);
@@ -2028,6 +2145,8 @@ function togglePause(){
 function setupButtons(){
   document.getElementById('startBtn').onclick=function(){ audio(); gotoCharSelect(); };
   document.getElementById('charConfirm').onclick=function(){ gotoLevelSelect(); };
+  document.getElementById('evolveBtn').onclick=evolveSelected;
+  document.getElementById('evolveDone').onclick=function(){ gotoCharSelect(); };
   document.getElementById('charBack').onclick=gotoMenu;
   document.getElementById('backToMenu').onclick=gotoCharSelect;
   document.getElementById('retryBtn').onclick=function(){ startLevel(levelIndex); };
